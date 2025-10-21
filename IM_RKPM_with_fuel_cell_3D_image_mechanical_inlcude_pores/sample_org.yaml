@@ -1,0 +1,25 @@
+Geometry:
+  x_min: -10e-6
+  x_max: 10e-6
+  y_min: -10e-6
+  y_max: 10e-6
+  num_boundaries: 4
+  single_grain: True
+Time Step Setup:
+  t: 10
+  nt: 80
+Mesh Free Method:
+  differential_method: implicite
+  integral_method: gauss
+  c: 2
+Diffusion:
+  T_k: 3.0515e2
+  c_max: 49600.0
+  j_applied:  -15.0
+  ini_charge_state: 0.92
+  ini_potential: 3.712
+  k_con: 10.0
+  Dx_div_Dy: 100.0
+Mechanical:
+  E : 138.87e9
+  nu: 0.3
