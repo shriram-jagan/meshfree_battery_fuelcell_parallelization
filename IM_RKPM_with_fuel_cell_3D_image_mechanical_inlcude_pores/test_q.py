@@ -3,15 +3,13 @@ from scipy.sparse import csc_matrix
 
 # arr_small = np.array([[1, 2, 3],
 #                       [4, 5, 6]])            # shape (2, 3)
-arr_large = np.array([[9, 9, 0],
-                      [1, 0, 3],
-                      [0, 8, 9],
-                      [4, 0, 0],
-                      [0, 0, 0]])            # shape (5, 3)
+arr_large = np.array(
+    [[9, 9, 0], [1, 0, 3], [0, 8, 9], [4, 0, 0], [0, 0, 0]]
+)  # shape (5, 3)
 
 csc = csc_matrix(arr_large)
 
-array = np.array([1,2,3,4,5])
+array = np.array([1, 2, 3, 4, 5])
 
 csc.data *= array[csc.indices]
 

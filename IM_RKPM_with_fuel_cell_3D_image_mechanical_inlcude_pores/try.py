@@ -1,76 +1,123 @@
 import time
+
 start_time = time.time()
-import numpy as np
-from numpy import sign
-
-import matplotlib.pyplot as plt
-
-from tqdm import tqdm
-
-from numba import jit, njit
-import numba
-from numba.typed import List
-from numba.types import ListType
-import scipy.sparse as sp
-
-from scipy.sparse import csc_matrix, csr_matrix, bmat
-from scipy.sparse.linalg import spsolve
-from scipy.sparse.linalg import eigs
-
-from numpy.linalg import norm, eig
-
-import pickle
 import os
+import pickle
 import sys
 import warnings
 
-electrode_phi_meshfree = [0.04238164255329723, 0.059336592964299904, 0.06974191187933286, 0.0768496665163377, 0.08191337191955059, 0.08554413434585477, 0.0880783984594262, 0.08975793653232227, 0.09069047673835208, 0.09097295144055813]
-electrode_phi_comsol = [0.04239976860930609,0.05933580358603316,0.06973989737186347,0.0768531636158785,0.08192057237367924,\
-                        0.08555521698620203,0.08810211080116774,0.08977297301875978,0.09070664915755189,0.09100036972411722]
+import matplotlib.pyplot as plt
+import numba
+import numpy as np
+import scipy.sparse as sp
+from numba import jit, njit
+from numba.typed import List
+from numba.types import ListType
+from numpy import sign
+from numpy.linalg import eig, norm
+from scipy.sparse import bmat, csc_matrix, csr_matrix
+from scipy.sparse.linalg import eigs, spsolve
+from tqdm import tqdm
 
-portion = [0.05, 0.1, 0.15,0.2,0.25,0.3,0.35,0.4,0.45,0.5]
-electrolyte_phi_meshfree = [0.34971627597311644, 0.32959998394537027, 0.31725451024848356, 0.30882144441270687, 0.30281355342643407, 0.29850578970501074, 0.2954989778380446, 0.2935062662927766, 0.29239984041452316, 0.29206469403526564]
-electrolyte_phi_comsol = [0.3496952622985523,0.3296021990755289,0.317259211753236,0.3088205642981656,0.3028090111266762,\
-                          0.2984971280242831,0.29547561451492005,0.29349333545437056,0.292385614441175,0.29203713617920785]
+electrode_phi_meshfree = [
+    0.04238164255329723,
+    0.059336592964299904,
+    0.06974191187933286,
+    0.0768496665163377,
+    0.08191337191955059,
+    0.08554413434585477,
+    0.0880783984594262,
+    0.08975793653232227,
+    0.09069047673835208,
+    0.09097295144055813,
+]
+electrode_phi_comsol = [
+    0.04239976860930609,
+    0.05933580358603316,
+    0.06973989737186347,
+    0.0768531636158785,
+    0.08192057237367924,
+    0.08555521698620203,
+    0.08810211080116774,
+    0.08977297301875978,
+    0.09070664915755189,
+    0.09100036972411722,
+]
 
-fig1 = plt.figure( )
-plt.plot(portion,electrolyte_phi_meshfree, '-ob', label='Meshfree')
-plt.plot(portion,electrolyte_phi_comsol, '-or', label='Comsol')
-plt.plot([0], [0.29357795249561125], 'xb', label = 'Line Source Meshfree')
-plt.plot([0], [0.2863391381371657], 'xr', label = 'Line Source Comsol')
+portion = [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+electrolyte_phi_meshfree = [
+    0.34971627597311644,
+    0.32959998394537027,
+    0.31725451024848356,
+    0.30882144441270687,
+    0.30281355342643407,
+    0.29850578970501074,
+    0.2954989778380446,
+    0.2935062662927766,
+    0.29239984041452316,
+    0.29206469403526564,
+]
+electrolyte_phi_comsol = [
+    0.3496952622985523,
+    0.3296021990755289,
+    0.317259211753236,
+    0.3088205642981656,
+    0.3028090111266762,
+    0.2984971280242831,
+    0.29547561451492005,
+    0.29349333545437056,
+    0.292385614441175,
+    0.29203713617920785,
+]
+
+fig1 = plt.figure()
+plt.plot(portion, electrolyte_phi_meshfree, "-ob", label="Meshfree")
+plt.plot(portion, electrolyte_phi_comsol, "-or", label="Comsol")
+plt.plot([0], [0.29357795249561125], "xb", label="Line Source Meshfree")
+plt.plot([0], [0.2863391381371657], "xr", label="Line Source Comsol")
 plt.legend()
 plt.grid()
-plt.xlabel('Interface portion')
-plt.ylabel('Max phi in electrolyte')
+plt.xlabel("Interface portion")
+plt.ylabel("Max phi in electrolyte")
 
-fig2 = plt.figure( )
-plt.plot(portion,electrode_phi_meshfree, '-ob', label='Meshfree')
-plt.plot(portion,electrode_phi_comsol, '-or', label='Comsol')
+fig2 = plt.figure()
+plt.plot(portion, electrode_phi_meshfree, "-ob", label="Meshfree")
+plt.plot(portion, electrode_phi_comsol, "-or", label="Comsol")
 
-plt.plot([0], [0.08969804434334647], 'xb', label = 'Line Source Meshfree')
-plt.plot([0], [0.09580264355852622], 'xr', label = 'Line Source Comsol')
+plt.plot([0], [0.08969804434334647], "xb", label="Line Source Meshfree")
+plt.plot([0], [0.09580264355852622], "xr", label="Line Source Comsol")
 plt.legend()
 plt.grid()
-plt.xlabel('Interface portion')
-plt.ylabel('Min phi in electrode')
+plt.xlabel("Interface portion")
+plt.ylabel("Min phi in electrode")
 
 plt.show()
 
 exit()
 
 
-potential_in_domain_save_electrolyte = np.loadtxt('potential_in_domain_electrolyte.txt')
-potential_in_domain_save_electrode = np.loadtxt('potential_in_domain_electrode.txt')
+potential_in_domain_save_electrolyte = np.loadtxt("potential_in_domain_electrolyte.txt")
+potential_in_domain_save_electrode = np.loadtxt("potential_in_domain_electrode.txt")
 fig1 = plt.figure()
-ax1 = fig1.add_subplot(111, projection='3d')
-sc = ax1.scatter(potential_in_domain_save_electrolyte[:, 0], potential_in_domain_save_electrolyte[:, 1],potential_in_domain_save_electrolyte[:, 2], c=potential_in_domain_save_electrolyte[:, 3])
+ax1 = fig1.add_subplot(111, projection="3d")
+sc = ax1.scatter(
+    potential_in_domain_save_electrolyte[:, 0],
+    potential_in_domain_save_electrolyte[:, 1],
+    potential_in_domain_save_electrolyte[:, 2],
+    c=potential_in_domain_save_electrolyte[:, 3],
+)
 # plt.scatter(potential_on_boundary_save_electrolyte[:, 0], potential_on_boundary_save_electrolyte[:, 1],potential_on_boundary_save_electrolyte[:, 2], c=potential_on_boundary_save_electrolyte[:, 3])
 
 plt.colorbar(sc, ax=ax1)
 
 fig2 = plt.figure()
-ax = fig2.add_subplot(111, projection='3d')
-sc = ax.scatter(potential_in_domain_save_electrode[:, 0], potential_in_domain_save_electrode[:, 1], potential_in_domain_save_electrode[:, 2], c=potential_in_domain_save_electrode[:, 3])
+ax = fig2.add_subplot(111, projection="3d")
+sc = ax.scatter(
+    potential_in_domain_save_electrode[:, 0],
+    potential_in_domain_save_electrode[:, 1],
+    potential_in_domain_save_electrode[:, 2],
+    c=potential_in_domain_save_electrode[:, 3],
+)
 # plt.scatter(potential_on_boundary_save_electrode[:, 0], potential_on_boundary_save_electrode[:, 1],potential_on_boundary_save_electrode[:, 2], c=potential_on_boundary_save_electrode[:, 3])
 
 plt.colorbar(sc, ax=ax)
@@ -97,7 +144,7 @@ plt.show()
 # z_ver_mn = np.array([z_min+n*(z_max-z_min)/n_intervals, z_min+n*(z_max-z_min)/n_intervals, z_min+n*(z_max-z_min)/n_intervals, z_min+n*(z_max-z_min)/n_intervals, z_min+(n+1)*(z_max-z_min)/n_intervals,z_min+(n+1)*(z_max-z_min)/n_intervals,z_min+(n+1)*(z_max-z_min)/n_intervals,z_min+(n+1)*(z_max-z_min)/n_intervals])
 # # calculate the cy coordinates of gauss points in current integration domain
 # for k in range(len(x_G_domain)):
-    
+
 #     x_G_mn_k = 1.0/8.0*np.dot(np.array([(1+x_G_domain[k][0])*(1-x_G_domain[k][1])*(1-x_G_domain[k][2]), (1+x_G_domain[k][0])*(1+x_G_domain[k][1])*(1-x_G_domain[k][2]), \
 #                             (1-x_G_domain[k][0])*(1+x_G_domain[k][1])*(1-x_G_domain[k][2]), (1-x_G_domain[k][0])*(1-x_G_domain[k][1])*(1-x_G_domain[k][2]), \
 #                                 (1+x_G_domain[k][0])*(1-x_G_domain[k][1])*(1+x_G_domain[k][2]), (1+x_G_domain[k][0])*(1+x_G_domain[k][1])*(1+x_G_domain[k][2]), \
@@ -110,7 +157,7 @@ plt.show()
 #                             (1-x_G_domain[k][0])*(1+x_G_domain[k][1])*(1-x_G_domain[k][2]), (1-x_G_domain[k][0])*(1-x_G_domain[k][1])*(1-x_G_domain[k][2]), \
 #                                 (1+x_G_domain[k][0])*(1-x_G_domain[k][1])*(1+x_G_domain[k][2]), (1+x_G_domain[k][0])*(1+x_G_domain[k][1])*(1+x_G_domain[k][2]), \
 #                                     (1-x_G_domain[k][0])*(1+x_G_domain[k][1])*(1+x_G_domain[k][2]), (1-x_G_domain[k][0])*(1-x_G_domain[k][1])*(1+x_G_domain[k][2])],dtype=np.float64), np.transpose(z_ver_mn))
-    
+
 #     x_G.append([x_G_mn_k, y_G_mn_k, z_G_mn_k])
 
 # print(x_G)
@@ -249,4 +296,3 @@ plt.show()
 # # fig2 = plt.figure()
 # # plt.scatter(potential_in_domain_save_electrode[:, 0], potential_in_domain_save_electrode[:, 1], c=potential_in_domain_save_electrode[:, 2])
 # # plt.scatter(potential_on_boundary_save_electrode[:, 0], potential_on_boundary_save_electrode[:, 1], c=potential_on_boundary_save_electrode[:, 2])
-

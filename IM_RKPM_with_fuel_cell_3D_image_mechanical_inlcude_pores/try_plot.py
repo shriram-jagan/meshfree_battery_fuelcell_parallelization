@@ -1,6 +1,6 @@
-a = 'True'
-b = 'True'
-print(a== 'True' and b=='True')
+a = "True"
+b = "True"
+print(a == "True" and b == "True")
 
 import numpy as np
 
@@ -13,4 +13,4 @@ a1 = 1
 
 a2 = 2
 
-print(np.max(a1,a2))
+print(np.max(a1, a2))
