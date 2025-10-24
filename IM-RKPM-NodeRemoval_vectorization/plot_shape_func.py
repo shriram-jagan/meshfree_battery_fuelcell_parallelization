@@ -31,7 +31,7 @@ from numba import jit, njit, typed
 from numpy import sign
 from numpy.linalg import eig, norm
 from read_image import read_in_image
-from scipy.sparse import bmat, csc_matrix, csr_matrix
+from scipy.sparse import bmat, csr_matrix
 from scipy.sparse.linalg import eigs, spsolve
 from shape_function_in_domain_plot import compute_phi_M, shape_grad_shape_func
 from tqdm import tqdm
@@ -781,8 +781,8 @@ heaviside_plotting_points = np.asarray(heaviside_plotting_points)
 # plt.show()
 # exit()
 
-# numba doesn't support csc_matrix, so get all these parameters and construct csc_matrix out of numba
-phi_a = csc_matrix(
+# numba doesn't support csr_matrix, so get all these parameters and construct csr_matrix out of numba
+phi_a = csr_matrix(
     (
         np.array(phi_nonzerovalue_data),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
@@ -853,8 +853,8 @@ plt.show()
 # # exit()
 
 
-# phi_a_P_x = csc_matrix((np.array(phi_P_x_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
-# phi_a_P_y = csc_matrix((np.array(phi_P_y_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
+# phi_a_P_x = csr_matrix((np.array(phi_P_x_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
+# phi_a_P_y = csr_matrix((np.array(phi_P_y_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
 
 num_non_zero_phi_a = np.shape(np.array(phi_nonzero_index_row))[0]
 
@@ -880,22 +880,22 @@ shape_func_value, grad_shape_func_x_value, grad_shape_func_y_value = (
     )
 )
 
-# numba doesn't support csc_matrix, so get all these parameters and construct csc_matrix out of numba
-shape_func = csc_matrix(
+# numba doesn't support csr_matrix, so get all these parameters and construct csr_matrix out of numba
+shape_func = csr_matrix(
     (
         np.array(shape_func_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_all_plotting_points, num_nodes),
 )
-grad_shape_func_x = csc_matrix(
+grad_shape_func_x = csr_matrix(
     (
         np.array(grad_shape_func_x_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_all_plotting_points, num_nodes),
 )
-grad_shape_func_y = csc_matrix(
+grad_shape_func_y = csr_matrix(
     (
         np.array(grad_shape_func_y_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),

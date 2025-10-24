@@ -31,7 +31,7 @@ from numba import jit, njit, typed
 from numpy import sign
 from numpy.linalg import eig, norm
 from read_image import read_in_image
-from scipy.sparse import bmat, csc_matrix, csr_matrix
+from scipy.sparse import bmat, csr_matrix
 from scipy.sparse.linalg import eigs, spsolve
 from shape_func_correction_node_removal import modify_shape_func_node_removal
 from shape_func_interface_nodes import compute_phi_M_int, shape_grad_shape_func_int
@@ -50,8 +50,14 @@ y_max = 10e-6
 ###############################
 # Define time step
 ###############################
-t = 100.0  # simulate for 10s
-nt = 1000  # nt is the number of time steps
+# SJ
+t = 1.0  # simulate for 10s
+nt = 10  # nt is the number of time steps
+
+## Original
+# t = 100.0  # simulate for 10s
+# nt = 1000  # nt is the number of time steps
+
 dt = t / nt  # time step
 
 IM_RKPM = "True"  # if it is interfacial modified RKPM
@@ -415,21 +421,21 @@ M_P_y = np.array(
     IM_RKPM,
 )
 
-phi = csc_matrix(
+phi = csr_matrix(
     (
         np.array(phi_nonzerovalue_data),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-phi_x = csc_matrix(
+phi_x = csr_matrix(
     (
         np.array(phi_P_x_nonzerovalue_data),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-phi_y = csc_matrix(
+phi_y = csr_matrix(
     (
         np.array(phi_P_x_nonzerovalue_data),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
@@ -476,43 +482,43 @@ num_non_zero_phi_a = np.shape(np.array(phi_nonzero_index_row))[0]
     IM_RKPM,
 )
 
-# numba doesn't support csc_matrix, so get all these parameters and construct csc_matrix out of numba
-shape_func = csc_matrix(
+# numba doesn't support csr_matrix, so get all these parameters and construct csr_matrix out of numba
+shape_func = csr_matrix(
     (
         np.array(shape_func_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-shape_func_times_det_J_time_weight = csc_matrix(
+shape_func_times_det_J_time_weight = csr_matrix(
     (
         np.array(shape_func_times_det_J_time_weight_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-grad_shape_func_x = csc_matrix(
+grad_shape_func_x = csr_matrix(
     (
         np.array(grad_shape_func_x_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-grad_shape_func_y = csc_matrix(
+grad_shape_func_y = csr_matrix(
     (
         np.array(grad_shape_func_y_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-grad_shape_func_x_times_det_J_time_weight = csc_matrix(
+grad_shape_func_x_times_det_J_time_weight = csr_matrix(
     (
         np.array(grad_shape_func_x_times_det_J_time_weight_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
     ),
     shape=(num_gauss_points_in_domain, num_nodes),
 )
-grad_shape_func_y_times_det_J_time_weight = csc_matrix(
+grad_shape_func_y_times_det_J_time_weight = csr_matrix(
     (
         np.array(grad_shape_func_y_times_det_J_time_weight_value),
         (np.array(phi_nonzero_index_row), np.array(phi_nonzero_index_column)),
@@ -563,21 +569,21 @@ M_int_P_y = np.array(
     M_int_P_y,
 ) = compute_phi_M_int(x_nodes_interface_unique, x_nodes, a, M_int, M_int_P_x, M_int_P_y)
 
-phi_int = csc_matrix(
+phi_int = csr_matrix(
     (
         np.array(phi_nonzerovalue_data_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-phi_x_int = csc_matrix(
+phi_x_int = csr_matrix(
     (
         np.array(phi_P_x_nonzerovalue_data_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-phi_y_int = csc_matrix(
+phi_y_int = csr_matrix(
     (
         np.array(phi_P_x_nonzerovalue_data_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
@@ -614,43 +620,43 @@ num_non_zero_phi_a_int = np.shape(np.array(phi_nonzero_index_row_int))[0]
     det_J_time_weight,
 )
 
-# numba doesn't support csc_matrix, so get all these parameters and construct csc_matrix out of numba
-shape_func_int = csc_matrix(
+# numba doesn't support csr_matrix, so get all these parameters and construct csr_matrix out of numba
+shape_func_int = csr_matrix(
     (
         np.array(shape_func_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-shape_func_times_det_J_time_weight_int = csc_matrix(
+shape_func_times_det_J_time_weight_int = csr_matrix(
     (
         np.array(shape_func_times_det_J_time_weight_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-grad_shape_func_x_int = csc_matrix(
+grad_shape_func_x_int = csr_matrix(
     (
         np.array(grad_shape_func_x_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-grad_shape_func_y_int = csc_matrix(
+grad_shape_func_y_int = csr_matrix(
     (
         np.array(grad_shape_func_y_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-grad_shape_func_x_times_det_J_time_weight_int = csc_matrix(
+grad_shape_func_x_times_det_J_time_weight_int = csr_matrix(
     (
         np.array(grad_shape_func_x_times_det_J_time_weight_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
     ),
     shape=(num_interface_nodes, num_nodes),
 )
-grad_shape_func_y_times_det_J_time_weight_int = csc_matrix(
+grad_shape_func_y_times_det_J_time_weight_int = csr_matrix(
     (
         np.array(grad_shape_func_y_times_det_J_time_weight_value_int),
         (np.array(phi_nonzero_index_row_int), np.array(phi_nonzero_index_column_int)),
@@ -727,21 +733,21 @@ M_b_P_y = np.array(
 # np.savetxt('distance_func_dx_on_boundaries.txt', save_distance_function_dx_b)
 # np.savetxt('distance_func_dy_on_boundaries.txt', save_distance_function_dy_b)
 
-phi_b = csc_matrix(
+phi_b = csr_matrix(
     (
         np.array(phi_b_nonzerovalue_data),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-phi_x_b = csc_matrix(
+phi_x_b = csr_matrix(
     (
         np.array(phi_b_P_x_nonzerovalue_data),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-phi_y_b = csc_matrix(
+phi_y_b = csr_matrix(
     (
         np.array(phi_b_P_x_nonzerovalue_data),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
@@ -782,42 +788,42 @@ num_non_zero_phi_a_b = np.shape(np.array(phi_b_nonzero_index_row))[0]
     det_J_b_time_weight,
     IM_RKPM,
 )
-shape_func_b = csc_matrix(
+shape_func_b = csr_matrix(
     (
         np.array(shape_func_b_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-shape_func_b_times_det_J_b_time_weight = csc_matrix(
+shape_func_b_times_det_J_b_time_weight = csr_matrix(
     (
         np.array(shape_func_b_times_det_J_b_time_weight_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-grad_shape_func_b_x = csc_matrix(
+grad_shape_func_b_x = csr_matrix(
     (
         np.array(grad_shape_func_b_x_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-grad_shape_func_b_y = csc_matrix(
+grad_shape_func_b_y = csr_matrix(
     (
         np.array(grad_shape_func_b_y_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-grad_shape_func_b_x_times_det_J_b_time_weight = csc_matrix(
+grad_shape_func_b_x_times_det_J_b_time_weight = csr_matrix(
     (
         np.array(grad_shape_func_b_x_times_det_J_b_time_weight_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
     ),
     shape=(num_gauss_points_on_boundary, num_nodes),
 )
-grad_shape_func_b_y_times_det_J_b_time_weight = csc_matrix(
+grad_shape_func_b_y_times_det_J_b_time_weight = csr_matrix(
     (
         np.array(grad_shape_func_b_y_times_det_J_b_time_weight_value),
         (np.array(phi_b_nonzero_index_row), np.array(phi_b_nonzero_index_column)),
@@ -1029,20 +1035,20 @@ for ii in range(nt):
                     damaged_interface_nodes_id,
                 )
 
-                phi = csc_matrix(phi_array)
-                phi_x = csc_matrix(phi_x_array)
-                phi_y = csc_matrix(phi_y_array)
+                phi = csr_matrix(phi_array)
+                phi_x = csr_matrix(phi_x_array)
+                phi_y = csr_matrix(phi_y_array)
 
-                shape_func = csc_matrix(shape_func_array)
-                shape_func_times_det_J_time_weight = csc_matrix(
+                shape_func = csr_matrix(shape_func_array)
+                shape_func_times_det_J_time_weight = csr_matrix(
                     shape_func_times_det_J_time_weight_array
                 )
-                grad_shape_func_x = csc_matrix(grad_shape_func_x_array)
-                grad_shape_func_y = csc_matrix(grad_shape_func_y_array)
-                grad_shape_func_x_times_det_J_time_weight = csc_matrix(
+                grad_shape_func_x = csr_matrix(grad_shape_func_x_array)
+                grad_shape_func_y = csr_matrix(grad_shape_func_y_array)
+                grad_shape_func_x_times_det_J_time_weight = csr_matrix(
                     grad_shape_func_x_times_det_J_time_weight_array
                 )
-                grad_shape_func_y_times_det_J_time_weight = csc_matrix(
+                grad_shape_func_y_times_det_J_time_weight = csr_matrix(
                     grad_shape_func_y_times_det_J_time_weight_array
                 )
 
@@ -1116,20 +1122,20 @@ for ii in range(nt):
                     damaged_interface_nodes_id,
                 )
 
-                phi_b = csc_matrix(phi_b_array)
-                phi_x_b = csc_matrix(phi_x_b_array)
-                phi_y_b = csc_matrix(phi_y_b_array)
+                phi_b = csr_matrix(phi_b_array)
+                phi_x_b = csr_matrix(phi_x_b_array)
+                phi_y_b = csr_matrix(phi_y_b_array)
 
-                shape_func_b = csc_matrix(shape_func_b_array)
-                shape_func_b_times_det_J_b_time_weight = csc_matrix(
+                shape_func_b = csr_matrix(shape_func_b_array)
+                shape_func_b_times_det_J_b_time_weight = csr_matrix(
                     shape_func_b_times_det_J_b_time_weight_array
                 )
-                grad_shape_func_b_x = csc_matrix(grad_shape_func_b_x_array)
-                grad_shape_func_b_y = csc_matrix(grad_shape_func_b_y_array)
-                grad_shape_func_b_x_times_det_J_b_time_weight = csc_matrix(
+                grad_shape_func_b_x = csr_matrix(grad_shape_func_b_x_array)
+                grad_shape_func_b_y = csr_matrix(grad_shape_func_b_y_array)
+                grad_shape_func_b_x_times_det_J_b_time_weight = csr_matrix(
                     grad_shape_func_b_x_times_det_J_b_time_weight_array
                 )
-                grad_shape_func_b_y_times_det_J_b_time_weight = csc_matrix(
+                grad_shape_func_b_y_times_det_J_b_time_weight = csr_matrix(
                     grad_shape_func_b_y_times_det_J_b_time_weight_array
                 )
 
@@ -1209,9 +1215,9 @@ for ii in range(nt):
                     damaged_interface_nodes_id,
                 )
 
-                phi_int = csc_matrix(phi_int_array)
-                phi_x_int = csc_matrix(phi_x_int_array)
-                phi_y_int = csc_matrix(phi_y_int_array)
+                phi_int = csr_matrix(phi_int_array)
+                phi_x_int = csr_matrix(phi_x_int_array)
+                phi_y_int = csr_matrix(phi_y_int_array)
 
                 # for da_in in damaged_interface_nodes_id:
                 #     shape_func_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
@@ -1221,16 +1227,16 @@ for ii in range(nt):
                 #     grad_shape_func_x_times_det_J_time_weight_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
                 #     grad_shape_func_y_times_det_J_time_weight_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
 
-                shape_func_int = csc_matrix(shape_func_int_array)
-                shape_func_times_det_J_time_weight_int = csc_matrix(
+                shape_func_int = csr_matrix(shape_func_int_array)
+                shape_func_times_det_J_time_weight_int = csr_matrix(
                     shape_func_times_det_J_time_weight_int_array
                 )
-                grad_shape_func_x_int = csc_matrix(grad_shape_func_x_int_array)
-                grad_shape_func_y_int = csc_matrix(grad_shape_func_y_int_array)
-                grad_shape_func_x_times_det_J_time_weight_int = csc_matrix(
+                grad_shape_func_x_int = csr_matrix(grad_shape_func_x_int_array)
+                grad_shape_func_y_int = csr_matrix(grad_shape_func_y_int_array)
+                grad_shape_func_x_times_det_J_time_weight_int = csr_matrix(
                     grad_shape_func_x_times_det_J_time_weight_int_array
                 )
-                grad_shape_func_y_times_det_J_time_weight_int = csc_matrix(
+                grad_shape_func_y_times_det_J_time_weight_int = csr_matrix(
                     grad_shape_func_y_times_det_J_time_weight_int_array
                 )
 
@@ -1369,7 +1375,7 @@ for ii in range(nt):
                 all_damaged_interface_nodes_id + num_nodes,
                 all_damaged_interface_nodes_id + num_nodes,
             ] = 1.0
-            K = csc_matrix(K)
+            K = csr_matrix(K)
 
             f[all_damaged_interface_nodes_id] = 0.0
             f[all_damaged_interface_nodes_id + num_nodes] = 0.0
@@ -1490,7 +1496,7 @@ for ii in range(nt):
             all_damaged_interface_nodes_id + num_nodes,
         ] = 1.0
 
-        K_mechanical = csc_matrix(K_mechanical)
+        K_mechanical = csr_matrix(K_mechanical)
 
     comp_mechanical_stiffness_matrix = time.time()
 
