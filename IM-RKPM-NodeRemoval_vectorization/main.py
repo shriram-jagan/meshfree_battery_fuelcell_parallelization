@@ -53,7 +53,7 @@ dt = t/nt            # time step
 
 IM_RKPM = 'True'  # if it is interfacial modified RKPM
 
-Node_removal = 'True'
+Node_removal = 'True' # remove damaged nodes if it is true
 
 ###############################
 # geometry
@@ -64,13 +64,10 @@ single_grain = 'False'   # True: single grain, False: multiple grains read from 
 if single_grain == 'True':
     angle = 0
 else:
-    angle = [26.0, np.pi, 75.0, np.pi/4.0, 121.0,np.pi*2.0/3.0, 149.0, np.pi/2.0, 90.0, np.pi/3.0, 81.0, np.pi/4.0, 37.0, np.pi*2.0/3.0, 110.0, 0.0]
-    # angle = [26.0, 0.0, 75.0, 0.0, 121.0,0.0, 149.0, 0.0, 90.0, 0.0, 81.0, 0.0, 37.0, 0.0, 110.0, 0.0]
+    angle = [26.0, np.pi, 75.0, np.pi/4.0, 121.0,np.pi*2.0/3.0, 149.0, \
+             np.pi/2.0, 90.0, np.pi/3.0, 81.0, np.pi/4.0, 37.0, np.pi*2.0/3.0, 110.0, 0.0]
 
-    # angle = {"26":np.pi/6, "75":np.pi/12, "121":np.pi/3, "149":np.pi/6, "90":np.pi/3, "81":np.pi/4, "37":np.pi/12, "110":0} numba doesn't support library, so we are
-    # using a list to save the angle of grain 
-
-n_boundaries = 4
+n_boundaries = 4   # number of boundaries
 
 ###############################
 # Define material properties
@@ -95,7 +92,6 @@ mu = E/2/(1+nu)         # lamme constants
 k_i = 0.0125
 k_f = 0.015
 
-
 #######################################
 # differential method
 #######################################
@@ -108,11 +104,13 @@ damage_model = 'ON'       # ON or OFF
 
 if integral_method == 'gauss':
 # Define Guass int points and cells
-    x_G_domain_rec = [[-3**0.5/3, -3**0.5/3],[-3**0.5/3, 3**0.5/3],[3**0.5/3, -3**0.5/3],[3**0.5/3, 3**0.5/3]] # coordinates of 2D Gauss points in Neutral coordinate system for square doamin
+    x_G_domain_rec = [[-3**0.5/3, -3**0.5/3],[-3**0.5/3, 3**0.5/3],\
+                      [3**0.5/3, -3**0.5/3],[3**0.5/3, 3**0.5/3]] # coordinates of 2D Gauss points in Neutral coordinate system for square doamin
     x_G_domain_tri = [[1.0/6.0, 2.0/3.0],[1.0/6.0,1.0/6.0],[2.0/3.0, 1.0/6.0]]
     weight_G_domain_rec = [1.0,1.0,1.0,1.0]         # weight of each 2D Gauss points for rectangular
     weight_G_domain_tri = [1.0/3.0, 1.0/3.0, 1.0/3.0]
-    x_G_boundary = [-(3.0/7.0+2.0/7.0*(1.2)**0.5)**0.5, -(3.0/7.0-2.0/7.0*(1.2)**0.5)**0.5, (3.0/7.0-2.0/7.0*(1.2)**0.5)**0.5, (3.0/7.0+2.0/7.0*(1.2)**0.5)**0.5]#[-0.9491079123427585,-0.7415311855993945,-0.4058451513773972,0,0.4058451513773972,0.7415311855993945,0.9491079123427585]#                   # coordinates of 1D Gauss points
+    x_G_boundary = [-(3.0/7.0+2.0/7.0*(1.2)**0.5)**0.5, -(3.0/7.0-2.0/7.0*(1.2)**0.5)**0.5, \
+                    (3.0/7.0-2.0/7.0*(1.2)**0.5)**0.5, (3.0/7.0+2.0/7.0*(1.2)**0.5)**0.5]#[-0.9491079123427585,-0.7415311855993945,-0.4058451513773972,0,0.4058451513773972,0.7415311855993945,0.9491079123427585]#                   # coordinates of 1D Gauss points
     weight_G_boundary = [0.5-30**0.5/36, 0.5+30**0.5/36, 0.5+30**0.5/36, 0.5-30**0.5/36]#[0.1294849661688697,0.2797053914892766,0.3818300505051189,0.4179591836734694,0.3818300505051189,0.2797053914892766,0.1294849661688697]#         # weight of each 1D Gauss points
 
 def_para_time = time.time()
@@ -131,28 +129,18 @@ if single_grain == 'True':
     num_interface_segments = 0
     interface_nodes = []
     BxByCxCy = []
+
+
 else:
     file_name = 'reduced_8grain_ulm_large_grain_51x51.tiff'
     img_, unic_grain_id, num_pixels_x, num_pixels_y = read_in_image(file_name)
     # print(num_pixels_x, num_pixels_y)
     # x_nodes_interface_unique_id is the node id of interface nodes in whole node list
     cell_nodes_list, grain_id, grain_id_bottom, grain_id_top, grain_id_left, grain_id_right, cell_shape, num_rec_cell, num_tri_cell, x_nodes, nodes_grain_id, bottom_boundary_cell_nodes_list, right_boundary_cell_nodes_list, top_boundary_cell_nodes_list, left_boundary_cell_nodes_list, repeated_vertex, interface_segments, x_nodes_interface_unique, x_nodes_interface_unique_id  = get_x_nodes_multi_grain(x_min,x_max,y_min,y_max, num_pixels_x, num_pixels_y, img_)
+    
     num_interface_segments = np.shape(interface_segments)[0]
     interface_nodes = np.asarray(interface_segments).reshape(num_interface_segments*2, 2) # interface nodes has repeated nodes on interface, while x_nodes_interface_unique is unique.
     BxByCxCy = np.asarray(interface_segments).reshape(num_interface_segments, 4)  # the first column is x coordinates of point B, ......
-    # BxByCxCy = np.zeros((num_interface_segments, 4))
-    np.savetxt('bxbycxcy.txt',BxByCxCy)
-
-    np.savetxt('x_nodes.txt', x_nodes)
-
-    # cell_nodes_list: the ith row correspondes to ith domain cell, it includes the coordinates of all nodes that forms this cell
-    # grain_id: grain id of each domain cell
-    #grain_id_bottom: grain id of bottom boundary cell
-    # cell_shape: triangle or rectangle domain cell
-    #num_rec_cell: total number of rectangle cell
-    #x_nodes: coordinates of all nodes, shape: number of nodes times 2
-    # bottom_boundary_cell_nodes_list: coordinates
-    # print(len(repeated_vertex))
 
     boundary_nodes = np.asarray(bottom_boundary_cell_nodes_list+top_boundary_cell_nodes_list+left_boundary_cell_nodes_list+right_boundary_cell_nodes_list)
     
@@ -164,7 +152,7 @@ else:
 num_nodes = np.shape(x_nodes)[0]
 
 print('number of nodes: ' + str(num_nodes))
-print('number of nodes on interface: ' + str(np.shape(x_nodes_interface_unique)[0]))
+# print('number of nodes on interface: ' + str(np.shape(x_nodes_interface_unique)[0]))
 
 print('define gauss points')
 # compute the xy coordinates of each gauss points in each gauss domain and the Jacobian
@@ -174,16 +162,19 @@ if integral_method == 'gauss':
         x_G_b, det_J_b_time_weight = x_G_b_and_det_J_b_structured(n_boundaries, n_intervals, x_min, x_max, y_min, y_max, x_G_boundary, weight_G_boundary)
         gauss_angle = angle*np.ones(len(x_G))
         gauss_angle_b = angle*np.ones(len(x_G_b))
+        Gauss_grain_id = np.zeros(len(x_G), dtype=int)
+        Gauss_b_grain_id = np.zeros(len(x_G_b), dtype=int)
     else:
-        x_G_domain_tri = typed.List([typed.List(x) for x in x_G_domain_tri])
-        x_G_domain_rec = typed.List([typed.List(x) for x in x_G_domain_rec])
-        cell_nodes_list = typed.List([typed.List(x) for x in cell_nodes_list])
-
+        # x_G_domain_tri = typed.List([typed.List(x) for x in x_G_domain_tri])
+        # x_G_domain_rec = typed.List([typed.List(x) for x in x_G_domain_rec])
+        # cell_nodes_list = typed.List([typed.List(x) for x in cell_nodes_list])
+        # print('multi in domain')
         x_G, det_J_time_weight, gauss_angle, Gauss_grain_id= x_G_and_def_J_time_weight_multi_grains(num_of_cell,x_G_domain_rec, x_G_domain_tri,weight_G_domain_rec, weight_G_domain_tri, cell_shape, cell_nodes_list, grain_id, angle, repeated_vertex)
-        bottom_boundary_cell_nodes_list = typed.List([typed.List(x) for x in bottom_boundary_cell_nodes_list])
-        right_boundary_cell_nodes_list = typed.List([typed.List(x) for x in right_boundary_cell_nodes_list])
-        left_boundary_cell_nodes_list = typed.List([typed.List(x) for x in left_boundary_cell_nodes_list])
-        top_boundary_cell_nodes_list = typed.List([typed.List(x) for x in top_boundary_cell_nodes_list])
+        # bottom_boundary_cell_nodes_list = typed.List([typed.List(x) for x in bottom_boundary_cell_nodes_list])
+        # right_boundary_cell_nodes_list = typed.List([typed.List(x) for x in right_boundary_cell_nodes_list])
+        # left_boundary_cell_nodes_list = typed.List([typed.List(x) for x in left_boundary_cell_nodes_list])
+        # top_boundary_cell_nodes_list = typed.List([typed.List(x) for x in top_boundary_cell_nodes_list])
+        # print('multi on boundary')
         x_G_b, det_J_b_time_weight, gauss_angle_b, Gauss_b_grain_id = x_G_b_and_det_J_b_multi_grains(x_min, x_max, y_min, y_max, bottom_boundary_cell_nodes_list, right_boundary_cell_nodes_list, top_boundary_cell_nodes_list, left_boundary_cell_nodes_list, x_G_boundary, weight_G_boundary, grain_id_bottom, grain_id_top, grain_id_left, grain_id_right, angle)
     x_G = np.array(x_G)
     x_G_b = np.array(x_G_b)
@@ -193,9 +184,6 @@ if integral_method == 'gauss':
     gauss_angle_b = np.array(gauss_angle_b)
     Gauss_grain_id = np.array(Gauss_grain_id)
     Gauss_b_grain_id = np.array(Gauss_b_grain_id)
-
-np.savetxt('x_G.txt', x_G)
-np.savetxt('x_G_b.txt', x_G_b)
 
 # print(np.max(det_J_time_weight), np.min(det_J_time_weight), np.average(det_J_time_weight))
 print('number of Gauss points in domain: ' + str(num_gauss_points_in_domain))
@@ -238,6 +226,7 @@ M_P_y = np.array([np.zeros((3,3)) for _ in range(num_gauss_points_in_domain)],dt
 
 save_distance_function, save_distance_function_dx, save_distance_function_dy, save_point_D_coor, save_heavyside, save_heavyside_px, save_heavyside_py, phi_nonzero_index_row, phi_nonzero_index_column, phi_nonzerovalue_data, phi_P_x_nonzerovalue_data, phi_P_y_nonzerovalue_data, M, M_P_x, M_P_y = compute_phi_M(x_G, Gauss_grain_id, x_nodes,nodes_grain_id, a, M, M_P_x, M_P_y, num_interface_segments, interface_nodes, BxByCxCy, IM_RKPM)
 
+
 phi = csc_matrix((np.array(phi_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
 phi_x = csc_matrix((np.array(phi_P_x_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
 phi_y = csc_matrix((np.array(phi_P_x_nonzerovalue_data), (np.array(phi_nonzero_index_row),np.array(phi_nonzero_index_column))), shape = (num_gauss_points_in_domain, num_nodes))
@@ -268,11 +257,8 @@ shape_func_weak_dis_times_det_J_time_weight_array = shape_func_times_det_J_time_
 
 comp_shape_func_grad_shape_func_in_domain = time.time()
 
-np.savetxt('shape_func_124.txt', shape_func.toarray())
-np.savetxt('grad_shape_func_x_124.txt', grad_shape_func_x.toarray())
-np.savetxt('grad_shape_func_y_124.txt', grad_shape_func_y.toarray())
-
 print('time to compute the shape function and grad of shape function in domain = ' + "%s seconds" % (comp_shape_func_grad_shape_func_in_domain-def_nodes_gauss_points_time))
+
 
 #####################################################################
 # Compute shape function and its gradient on nodes on interfaces
@@ -285,6 +271,8 @@ M_int_P_y = np.array([np.zeros((3,3)) for _ in range(num_interface_nodes)],dtype
 
 
 phi_nonzero_index_row_int, phi_nonzero_index_column_int, phi_nonzerovalue_data_int, phi_P_x_nonzerovalue_data_int, phi_P_y_nonzerovalue_data_int, M_int, M_int_P_x, M_int_P_y = compute_phi_M_int(x_nodes_interface_unique, x_nodes, a, M_int, M_int_P_x, M_int_P_y)
+print('Computed phi and M on interface nodes')
+
 
 phi_int = csc_matrix((np.array(phi_nonzerovalue_data_int), (np.array(phi_nonzero_index_row_int),np.array(phi_nonzero_index_column_int))), shape = (num_interface_nodes, num_nodes))
 phi_x_int = csc_matrix((np.array(phi_P_x_nonzerovalue_data_int), (np.array(phi_nonzero_index_row_int),np.array(phi_nonzero_index_column_int))), shape = (num_interface_nodes, num_nodes))
@@ -322,16 +310,11 @@ M_b = np.array([np.zeros((3,3)) for _ in range(num_gauss_points_on_boundary)],dt
 M_b_P_x = np.array([np.zeros((3,3)) for _ in range(num_gauss_points_on_boundary)],dtype=np.float64)
 M_b_P_y = np.array([np.zeros((3,3)) for _ in range(num_gauss_points_on_boundary)],dtype=np.float64)
 
-#save_point_D_coor_b, save_distance_function_b,save_distance_function_dx_b,save_distance_function_dy_b, 
 save_distance_function_b, save_distance_function_dx_b, save_distance_function_dy_b, save_point_D_coor_b, save_heavyside_b, save_heavyside_px_b, save_heavyside_py_b, phi_b_nonzero_index_row, phi_b_nonzero_index_column, phi_b_nonzerovalue_data, phi_b_P_x_nonzerovalue_data, phi_b_P_y_nonzerovalue_data, M_b, M_b_P_x, M_b_P_y = compute_phi_M(x_G_b, Gauss_b_grain_id, x_nodes, nodes_grain_id, a, M_b, M_b_P_x, M_b_P_y, num_interface_segments, interface_nodes, BxByCxCy,IM_RKPM)
-# np.savetxt('distance_func_on_boundaries.txt', save_distance_function_b)
-# np.savetxt('distance_func_dx_on_boundaries.txt', save_distance_function_dx_b)
-# np.savetxt('distance_func_dy_on_boundaries.txt', save_distance_function_dy_b)
 
 phi_b = csc_matrix((np.array(phi_b_nonzerovalue_data), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
 phi_x_b = csc_matrix((np.array(phi_b_P_x_nonzerovalue_data), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
 phi_y_b = csc_matrix((np.array(phi_b_P_x_nonzerovalue_data), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
-
 
 np.savetxt('heavyside_b_124.txt', save_heavyside_b)
 np.savetxt('heavyside_px_b_124.txt', save_heavyside_px_b)
@@ -339,7 +322,9 @@ np.savetxt('heavyside_py_b_124.txt', save_heavyside_py_b)
 
 num_non_zero_phi_a_b = np.shape(np.array(phi_b_nonzero_index_row))[0]
 
-shape_func_b_value, shape_func_b_times_det_J_b_time_weight_value, grad_shape_func_b_x_value, grad_shape_func_b_y_value, grad_shape_func_b_x_times_det_J_b_time_weight_value, grad_shape_func_b_y_times_det_J_b_time_weight_value = shape_grad_shape_func(x_G_b,x_nodes, num_non_zero_phi_a_b,HT0, M_b, M_b_P_x, M_b_P_y, differential_method, HT1, HT2, phi_b_nonzerovalue_data, phi_b_P_x_nonzerovalue_data, phi_b_P_y_nonzerovalue_data, phi_b_nonzero_index_row, phi_b_nonzero_index_column, det_J_b_time_weight, IM_RKPM)
+shape_func_b_value, shape_func_b_times_det_J_b_time_weight_value, grad_shape_func_b_x_value, grad_shape_func_b_y_value, grad_shape_func_b_x_times_det_J_b_time_weight_value, grad_shape_func_b_y_times_det_J_b_time_weight_value = shape_grad_shape_func(x_G_b, x_nodes, num_non_zero_phi_a_b, HT0, M_b, M_b_P_x, M_b_P_y, differential_method, HT1, HT2, phi_b_nonzerovalue_data, phi_b_P_x_nonzerovalue_data, phi_b_P_y_nonzerovalue_data, phi_b_nonzero_index_row, phi_b_nonzero_index_column, det_J_b_time_weight, IM_RKPM)
+
+
 shape_func_b = csc_matrix((np.array(shape_func_b_value), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
 shape_func_b_times_det_J_b_time_weight = csc_matrix((np.array(shape_func_b_times_det_J_b_time_weight_value), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
 grad_shape_func_b_x = csc_matrix((np.array(grad_shape_func_b_x_value), (np.array(phi_b_nonzero_index_row),np.array(phi_b_nonzero_index_column))), shape = (num_gauss_points_on_boundary, num_nodes))
@@ -349,13 +334,10 @@ grad_shape_func_b_y_times_det_J_b_time_weight = csc_matrix((np.array(grad_shape_
 
 comp_shape_func_grad_shape_func_on_boundaries = time.time()
 
-np.savetxt('shape_func_b_124.txt', shape_func_b.toarray())
-np.savetxt('grad_shape_func_x_b_124.txt', grad_shape_func_b_x.toarray())
-np.savetxt('grad_shape_func_y_b_124.txt', grad_shape_func_b_y.toarray())
-
 print('time to compute the shape function and grad of shape function on baoundaries = ' + "%s seconds" % (comp_shape_func_grad_shape_func_on_boundaries-comp_shape_func_grad_shape_func_in_domain))
 
 print('assemble the matrix and solve all')
+
 
 ###################################################
 # assemble the stiffness matrix for mechanical part
@@ -441,7 +423,7 @@ if Node_removal == 'True':
     damaged_interface_nodes_id = np.array([]).astype(int)        # including damaged interface nodes from current time step
     all_damaged_interface_nodes_array = np.zeros((nt, num_interface_nodes))
 
-for ii in range(nt):
+for ii in range(50):
     print('time_step:' +str(ii))
 
     t= dt+dt*ii
@@ -530,14 +512,7 @@ for ii in range(nt):
                 phi_x_int = csc_matrix(phi_x_int_array)
                 phi_y_int = csc_matrix(phi_y_int_array)
 
-                # for da_in in damaged_interface_nodes_id:
-                #     shape_func_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-                #     shape_func_times_det_J_time_weight_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-                #     grad_shape_func_x_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-                #     grad_shape_func_y_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-                #     grad_shape_func_x_times_det_J_time_weight_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-                #     grad_shape_func_y_times_det_J_time_weight_int_array[np.where(x_nodes_interface_unique_id==da_in)[0], :] = 0.0
-
+               
                 shape_func_int = csc_matrix(shape_func_int_array)
                 shape_func_times_det_J_time_weight_int = csc_matrix(shape_func_times_det_J_time_weight_int_array)
                 grad_shape_func_x_int = csc_matrix(grad_shape_func_x_int_array)
