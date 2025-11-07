@@ -43,18 +43,20 @@ print(np.max(abs(alligned_x_G - x_G)))
 
 print(np.shape(alligned_x_G), np.shape(alligned_heavy_px), np.shape(alligned_heavy_py))
 
-plt.figure()
-plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy - heavy_xin))
-plt.colorbar()
-plt.title("difference of h")
+if 0:
 
-plt.figure()
-plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy_px - heavy_px_xin))
-plt.colorbar()
-plt.title("difference of h_x")
+    plt.figure()
+    plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy - heavy_xin))
+    plt.colorbar()
+    plt.title("difference of h")
 
-plt.figure()
-plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy_py - heavy_py_xin))
-plt.colorbar()
-plt.title("difference of h_y")
-plt.show()
+    plt.figure()
+    plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy_px - heavy_px_xin))
+    plt.colorbar()
+    plt.title("difference of h_x")
+
+    plt.figure()
+    plt.scatter(x_G[:, 0], x_G[:, 1], c=abs(alligned_heavy_py - heavy_py_xin))
+    plt.colorbar()
+    plt.title("difference of h_y")
+    plt.show()

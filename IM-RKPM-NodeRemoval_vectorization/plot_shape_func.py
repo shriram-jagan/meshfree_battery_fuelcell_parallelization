@@ -34,7 +34,6 @@ from read_image import read_in_image
 from scipy.sparse import bmat, csr_matrix
 from scipy.sparse.linalg import eigs, spsolve
 from shape_function_in_domain_plot import compute_phi_M, shape_grad_shape_func
-from tqdm import tqdm
 
 print("Define domain and parameters")
 ###############################

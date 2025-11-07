@@ -10,7 +10,6 @@ from numpy import sign
 from numpy.linalg import eig, norm
 from scipy.sparse import bmat, csc_matrix, csr_matrix
 from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
 
 #########################
 # read image in

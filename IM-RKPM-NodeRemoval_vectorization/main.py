@@ -1,7 +1,7 @@
 import time
 
 start_time = time.time()
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from define_buttler_volmer import (
@@ -36,7 +36,6 @@ from scipy.sparse.linalg import eigs, spsolve
 from shape_func_correction_node_removal import modify_shape_func_node_removal
 from shape_func_interface_nodes import compute_phi_M_int, shape_grad_shape_func_int
 from shape_function_in_domain import compute_phi_M, shape_grad_shape_func
-from tqdm import tqdm
 
 print("Define domain and parameters")
 ###############################
