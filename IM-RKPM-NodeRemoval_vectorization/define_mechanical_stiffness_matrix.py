@@ -102,43 +102,43 @@ def mechanical_stiffness_matrix(
 
     K11_mechanical = (
         (sp.diags(C11).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C33).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
     )
     K12_mechanical = (
         (sp.diags(C12).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C33).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
     )
     K21_mechanical = (
         (sp.diags(C12).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C33).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
     )
     K22_mechanical = (
         (sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C33).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
     )
 
     K_mechanical = bmat(
