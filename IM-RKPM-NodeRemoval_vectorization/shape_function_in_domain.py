@@ -1,17 +1,11 @@
-import time
+from common import csr_array, np, spsolve, time, use_matplotlib
 
-start_time = time.time()
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
+if use_matplotlib:
+    import matplotlib.pyplot as plt
+
+start_time = time()
 
 
-@jit
 def compute_phi_M(
     x_G,
     Gauss_grain_id,

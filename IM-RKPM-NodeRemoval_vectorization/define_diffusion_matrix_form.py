@@ -1,15 +1,11 @@
-import time
+from common import bmat, csr_array, np
+from common import sparse as sp
+from common import spsolve, time, use_matplotlib
 
-start_time = time.time()
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.sparse as sp
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
+if use_matplotlib:
+    import matplotlib.pyplot as plt
+
+start_time = time()
 
 
 def diffusion_matrix(
@@ -44,7 +40,7 @@ def diffusion_matrix(
     phi_n1,
 ):
 
-    M_matrix = shape_func.T * shape_func_times_det_J_time_weight  # sparse matrix
+    M_matrix = shape_func.T @ shape_func_times_det_J_time_weight  # sparse matrix
     K_cc = (
         (grad_shape_func_x).multiply(D_R11) + (grad_shape_func_y).multiply(D_R21)
     ).T * grad_shape_func_x_times_det_J_time_weight + (

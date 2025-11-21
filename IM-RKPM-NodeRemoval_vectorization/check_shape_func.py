@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit
+from common import np, use_matplotlib
+
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 shape_func = np.loadtxt("shape_func_124.txt")
 grad_shape_func_x = np.loadtxt("grad_shape_func_x_124.txt")
@@ -42,7 +43,6 @@ num_G = np.shape(x_G)[0]
 num_nodes = np.shape(x_nodes)[0]
 
 
-@jit
 def allign_G_nodes(
     num_G,
     num_nodes,

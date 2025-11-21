@@ -1,9 +1,11 @@
-import time
+from common import csr_array, np
+from common import sparse as sp
+from common import spsolve, time, use_matplotlib
 
-start_time = time.time()
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.sparse as sp
+if use_matplotlib:
+    import matplotlib.pyplot as plt
+
+start_time = time()
 from define_buttler_volmer import (
     Dn_complex,
     alpha_lattice_complex,
@@ -27,14 +29,8 @@ from get_nodes_gauss_points import (
     x_G_b_and_det_J_b_multi_grains,
     x_G_b_and_det_J_b_structured,
 )
-from numba import jit, njit, typed
-from numpy import sign
-from numpy.linalg import eig, norm
 from read_image import read_in_image
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
 from shape_function_in_domain_plot import compute_phi_M, shape_grad_shape_func
-from tqdm import tqdm
 
 print("Define domain and parameters")
 ###############################
@@ -157,7 +153,7 @@ if integral_method == "gauss":
         0.5 - 30**0.5 / 36,
     ]  # [0.1294849661688697,0.2797053914892766,0.3818300505051189,0.4179591836734694,0.3818300505051189,0.2797053914892766,0.1294849661688697]#         # weight of each 1D Gauss points
 
-def_para_time = time.time()
+def_para_time = time()
 
 print("time to define parameters = " + "%s seconds" % (def_para_time - start_time))
 
@@ -267,9 +263,9 @@ if integral_method == "gauss":
         gauss_angle = angle * np.ones(len(x_G))
         gauss_angle_b = angle * np.ones(len(x_G_b))
     else:
-        x_G_domain_tri = typed.List([typed.List(x) for x in x_G_domain_tri])
-        x_G_domain_rec = typed.List([typed.List(x) for x in x_G_domain_rec])
-        cell_nodes_list = typed.List([typed.List(x) for x in cell_nodes_list])
+        x_G_domain_tri = [list(x) for x in x_G_domain_tri]
+        x_G_domain_rec = [list(x) for x in x_G_domain_rec]
+        cell_nodes_list = [list(x) for x in cell_nodes_list]
 
         x_G, det_J_time_weight, gauss_angle, Gauss_grain_id = (
             x_G_and_def_J_time_weight_multi_grains(
@@ -285,18 +281,14 @@ if integral_method == "gauss":
                 repeated_vertex,
             )
         )
-        bottom_boundary_cell_nodes_list = typed.List(
-            [typed.List(x) for x in bottom_boundary_cell_nodes_list]
-        )
-        right_boundary_cell_nodes_list = typed.List(
-            [typed.List(x) for x in right_boundary_cell_nodes_list]
-        )
-        left_boundary_cell_nodes_list = typed.List(
-            [typed.List(x) for x in left_boundary_cell_nodes_list]
-        )
-        top_boundary_cell_nodes_list = typed.List(
-            [typed.List(x) for x in top_boundary_cell_nodes_list]
-        )
+        bottom_boundary_cell_nodes_list = [
+            list(x) for x in bottom_boundary_cell_nodes_list
+        ]
+        right_boundary_cell_nodes_list = [
+            list(x) for x in right_boundary_cell_nodes_list
+        ]
+        left_boundary_cell_nodes_list = [list(x) for x in left_boundary_cell_nodes_list]
+        top_boundary_cell_nodes_list = [list(x) for x in top_boundary_cell_nodes_list]
         x_G_b, det_J_b_time_weight, gauss_angle_b, Gauss_b_grain_id = (
             x_G_b_and_det_J_b_multi_grains(
                 x_min,
@@ -341,7 +333,7 @@ if integral_method == "gauss":
 # plt.show()
 # exit()
 
-def_nodes_gauss_points_time = time.time()
+def_nodes_gauss_points_time = time()
 
 print(
     "time to define nodes and Gauss points = "
@@ -903,7 +895,7 @@ grad_shape_func_y = csc_matrix(
     shape=(num_all_plotting_points, num_nodes),
 )
 
-comp_shape_func_grad_shape_func_in_domain = time.time()
+comp_shape_func_grad_shape_func_in_domain = time()
 
 print(
     "time to compute the shape function and grad of shape function in domain = "

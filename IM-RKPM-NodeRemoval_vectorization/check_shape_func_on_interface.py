@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit
+from common import np, use_matplotlib
+
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 shape_func = np.loadtxt("shape_func_int.txt")
 grad_shape_func_x = np.loadtxt("grad_shape_func_x_int.txt")

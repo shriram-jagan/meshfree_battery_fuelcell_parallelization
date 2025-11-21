@@ -1,5 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
+from common import np, use_matplotlib
+
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 # xin_concentration_mean = np.loadtxt('ave_con_DM_damage_long117.txt')
 # xin_concentration_max = np.loadtxt('max_con_DM_damage_long117.txt')
