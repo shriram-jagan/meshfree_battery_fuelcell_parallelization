@@ -43,7 +43,9 @@ def diffusion_matrix(shape_func, shape_func_times_det_J_time_weight,grad_shape_f
     f1 = f_c*dt/Fday-(K_cc*c_n1)*dt-M_matrix*(c_n1-c_n)
     f2 = f_phi-K_phiphi*phi_n1
 
-    K = bmat([[K11, K12], [K21, K22]]) 
+    K = cscmatrix(np.block([[K11.toarray(), K12.toarray()],[K21.toarray(), K22.toarray()]]))
+
+    #K = bmat([[K11, K12], [K21, K22]]) 
     f = np.concatenate((f1, f2))
 
     
