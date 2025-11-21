@@ -67,13 +67,13 @@ def diffusion_matrix(
     K_cp_BV = (
         shape_func_b.multiply((-djbv_deta))
     ).T @ shape_func_b_times_det_J_b_time_weight  # sparse matrix
-    f_c = shape_func_b_times_det_J_b_time_weight.T * (-j_BV)  # array
-    f_phi = shape_func_b_times_det_J_b_time_weight.T * (
+    f_c = shape_func_b_times_det_J_b_time_weight.T @ (-j_BV)  # array
+    f_phi = shape_func_b_times_det_J_b_time_weight.T @ (
         -(j_BV + j_applied * np.array(np.ones((np.shape(x_G_b)[0], 1))))
     )  # array
     K_phiphi = (
-        grad_shape_func_x.T * grad_shape_func_x_times_det_J_time_weight
-        + grad_shape_func_y.T * grad_shape_func_y_times_det_J_time_weight
+        grad_shape_func_x.T @ grad_shape_func_x_times_det_J_time_weight
+        + grad_shape_func_y.T @ grad_shape_func_y_times_det_J_time_weight
     ).multiply(
         k_con
     )  # sparse

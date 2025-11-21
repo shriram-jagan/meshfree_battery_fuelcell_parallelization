@@ -188,12 +188,12 @@ def mechanical_force_matrix(
 
     # assemble the force matrix for mechanical simulation
     f1_mechanical = (
-        grad_shape_func_x_times_det_J_time_weight.T * c_e_D1
-        + grad_shape_func_y_times_det_J_time_weight.T * c_e_D3
+        grad_shape_func_x_times_det_J_time_weight.T @ c_e_D1
+        + grad_shape_func_y_times_det_J_time_weight.T @ c_e_D3
     )
     f2_mechanical = (
-        grad_shape_func_y_times_det_J_time_weight.T * c_e_D2
-        + grad_shape_func_x_times_det_J_time_weight.T * c_e_D3
+        grad_shape_func_y_times_det_J_time_weight.T @ c_e_D2
+        + grad_shape_func_x_times_det_J_time_weight.T @ c_e_D3
     )
     f_mechanical = np.concatenate((f1_mechanical, f2_mechanical))
     # f_mechanical = f_mechanical[reorder_index, :]
