@@ -78,7 +78,8 @@ def mechanical_stiffness_matrix(C11, C12, C13, C22, C23, C33, E, x_nodes, num_ga
     K22_mechanical = (sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T*grad_shape_func_y+(sp.diags(C33).dot(grad_shape_func_x_times_det_J_time_weight)).T*grad_shape_func_x \
                 +(sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T*grad_shape_func_x+(sp.diags(C23).dot(grad_shape_func_x_times_det_J_time_weight)).T*grad_shape_func_y
     
-    K_mechanical = bmat([[K11_mechanical, K12_mechanical], [K21_mechanical, K22_mechanical]]) 
+    K_mechanical = cscmatrix(np.block([[K11_mechanical.toarray(), K12_mechanical].toarray(), [K21_mechanical.toarray(), K22_mechanical.toarray()]]))
+    # K_mechanical = bmat([[K11_mechanical, K12_mechanical], [K21_mechanical, K22_mechanical]]) 
 
     
     ### sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T is sparse matrix, (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T*grad_shape_func_x is dot product of two sparse matrixs
