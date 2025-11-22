@@ -1,5 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
+from common import np, use_matplotlib
+
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 # bxbycxcy = np.loadtxt('BxByCxCy.txt')
 # for i in range(np.shape(bxbycxcy)[0]):

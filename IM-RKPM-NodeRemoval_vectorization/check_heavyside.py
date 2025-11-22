@@ -1,6 +1,7 @@
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit
+from common import np, use_matplotlib
+
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 x_G = np.loadtxt("x_G.txt")
 heavy_xin = np.loadtxt("heavyside_124.txt")
@@ -12,7 +13,6 @@ kristen_data = np.loadtxt("Heavi_dHeavidx_dHeavidyIMRK_eps_123.txt", delimiter="
 x_G_kristen = np.loadtxt("GIcrd_123.txt", delimiter=",")
 
 
-@jit
 def allign_G(x_G, x_G_kristen, kristen_data):
 
     alligned_x_G = []

@@ -1,7 +1,7 @@
 import math
 
 import gmsh
-import numpy as np
+from common import np
 
 """
 code to generate PV panel geometry and mesh

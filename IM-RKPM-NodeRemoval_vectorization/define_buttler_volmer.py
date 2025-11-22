@@ -1,21 +1,15 @@
-import time
+from common import csr_array, np, spsolve, time, use_matplotlib
 
-start_time = time.time()
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
+if use_matplotlib:
+    import matplotlib.pyplot as plt
+
+start_time = time()
 
 
 ###################################################################
 # define exchange current density, j0, which depends on x,
 # x = real concentration/maximum concentration
 ###################################################################
-@jit
 def i_0_complex(x):
     A0 = 0.303490440978371
     A1 = 1.271944700013477
@@ -60,7 +54,6 @@ def i_0_complex(x):
 # define alpha lattice, which depends on x,
 # x = real concentration/maximum concentration
 ###################################################################
-@jit
 def alpha_lattice_complex(x):
     A0 = 2.81990134e-10
     A1 = 4.05602287e-12
@@ -105,7 +98,6 @@ def alpha_lattice_complex(x):
 # define c lattice, which depends on x,
 # x = real concentration/maximum concentration
 ###################################################################
-@jit
 def c_lattice_complex(x):
     A0 = 1.39010402e-9
     A1 = 5.3010374e-11
@@ -150,13 +142,9 @@ def c_lattice_complex(x):
 # define D, diffucivity which depends on x = real concentration/maximun concentration,
 # D is a n_g*(n_nodes*n_nodes)*(dimention*dimention) matrix
 ######################################################################################################################################
-@jit
 def Dn_complex(x, D_damage):
-    for i in range(len(D_damage)):
-        if D_damage[i] > 0.9:
-            D_damage[i] = 0.9
-
-    ## D_damage[D_damage>0.9] = 0.9
+    # Use numpy's vectorized operation instead of loop
+    D_damage[D_damage > 0.9] = 0.9
     macro_to_grain = 3.00
     D_x_thresholds = [
         -0.10000000000000000555,
@@ -234,7 +222,6 @@ def Dn_complex(x, D_damage):
 ################################################################
 # define the open circulate potential E_eq
 ################################################################
-@jit
 def ocp_complex(x):
     Eeq_x_thresholds = [
         -0.1000000000,
@@ -369,7 +356,6 @@ def ocp_complex(x):
 ################################################################
 # define current density
 ################################################################
-@jit
 def i_se(p_s, j0, E_eq, Fday, R, Tk):
     eta_s = p_s - E_eq
     i_bv = 2 * j0 * np.sinh(Fday / (2 * R * Tk) * eta_s)

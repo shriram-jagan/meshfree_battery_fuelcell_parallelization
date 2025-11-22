@@ -1,19 +1,12 @@
-import time
+from common import csr_array, np, spsolve, time, use_matplotlib
 
-start_time = time.time()
+if use_matplotlib:
+    import matplotlib.pyplot as plt
+
+start_time = time()
 from collections import Counter
 
-import matplotlib.pyplot as plt
-import numpy as np
-from numba import jit, njit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
 
-
-@jit(nopython=True)
 def get_x_nodes_single_grain(n_nodes, x_min, x_max, n_intervals, y_min, y_max):
     x_nodes = []
     for j in range(n_nodes):
@@ -27,7 +20,6 @@ def get_x_nodes_single_grain(n_nodes, x_min, x_max, n_intervals, y_min, y_max):
     return x_nodes
 
 
-@jit
 def get_x_nodes_multi_grain(
     x_min, x_max, y_min, y_max, num_pixels_x, num_pixels_y, img_
 ):
@@ -2198,7 +2190,6 @@ def x_G_and_def_J_time_weight_structured(
 # compute the xy coordinates of each gauss points in each gauss domain and the Jacobian on boundaries
 
 
-@jit
 def x_G_b_and_det_J_b_structured(
     n_boundaries,
     n_intervals,
@@ -2304,7 +2295,6 @@ def x_G_b_and_det_J_b_structured(
     return x_G_b, det_J_b_time_weight
 
 
-@njit
 def x_G_and_def_J_time_weight_multi_grains(
     num_of_cell,
     x_G_domain_rec,
@@ -2614,7 +2604,6 @@ def x_G_and_def_J_time_weight_multi_grains(
 # compute the xy coordinates of each gauss points in each gauss domain and the Jacobian on boundaries
 
 
-@njit
 def x_G_b_and_det_J_b_multi_grains(
     x_min,
     x_max,

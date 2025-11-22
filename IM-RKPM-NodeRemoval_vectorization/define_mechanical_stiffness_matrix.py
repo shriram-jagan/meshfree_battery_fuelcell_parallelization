@@ -1,14 +1,9 @@
-import time
+from common import bmat, csr_array, np
+from common import sparse as sp
+from common import spsolve, time, use_matplotlib
 
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.sparse as sp
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
-from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
+if use_matplotlib:
+    import matplotlib.pyplot as plt
 
 
 def mechanical_C_tensor(
@@ -107,43 +102,43 @@ def mechanical_stiffness_matrix(
 
     K11_mechanical = (
         (sp.diags(C11).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C33).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
     )
     K12_mechanical = (
         (sp.diags(C12).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C33).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
     )
     K21_mechanical = (
         (sp.diags(C12).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C33).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
     )
     K22_mechanical = (
         (sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
         + (sp.diags(C33).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        * grad_shape_func_x
+        @ grad_shape_func_x
         + (sp.diags(C23).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        * grad_shape_func_y
+        @ grad_shape_func_y
     )
 
     K_mechanical = bmat(
@@ -193,12 +188,12 @@ def mechanical_force_matrix(
 
     # assemble the force matrix for mechanical simulation
     f1_mechanical = (
-        grad_shape_func_x_times_det_J_time_weight.T * c_e_D1
-        + grad_shape_func_y_times_det_J_time_weight.T * c_e_D3
+        grad_shape_func_x_times_det_J_time_weight.T @ c_e_D1
+        + grad_shape_func_y_times_det_J_time_weight.T @ c_e_D3
     )
     f2_mechanical = (
-        grad_shape_func_y_times_det_J_time_weight.T * c_e_D2
-        + grad_shape_func_x_times_det_J_time_weight.T * c_e_D3
+        grad_shape_func_y_times_det_J_time_weight.T @ c_e_D2
+        + grad_shape_func_x_times_det_J_time_weight.T @ c_e_D3
     )
     f_mechanical = np.concatenate((f1_mechanical, f2_mechanical))
     # f_mechanical = f_mechanical[reorder_index, :]
