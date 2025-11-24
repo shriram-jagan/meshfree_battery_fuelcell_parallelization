@@ -320,6 +320,7 @@ np.savetxt("x_G_b.txt", x_G_b)
 print("number of Gauss points in domain: " + str(num_gauss_points_in_domain))
 print("number of Gauss points on boundaries: " + str(num_gauss_points_on_boundary))
 
+
 def_nodes_gauss_points_time = time()
 
 print(
@@ -343,25 +344,42 @@ HT2 = np.array(
 
 c = 2  # support size
 
+print(f"Number of nodes: {num_nodes}")
+
+
+def scipy_spatial_tree_dist(x_nodes):
+    from scipy.spatial import cKDTree
+
+    print(f"Importing SciPy Spatial KDTree")
+
+    tree = cKDTree(x_nodes)
+    distances, indices = tree.query(x_nodes, k=5)
+    h = distances[:, -1]
+
+    return h
+
+
 if single_grain == "True":
     a = (
         c * (x_max - x_min) / n_intervals * np.ones(num_nodes)
     )  # compact support size, shape: (num_nodes,)
 else:
 
-    h = np.zeros(num_nodes)
-    for i in range(num_nodes):
-        dist = (
-            (x_nodes[i, 0] - x_nodes[:, 0]) ** 2 + (x_nodes[i, 1] - x_nodes[:, 1]) ** 2
-        ) ** 0.5
+    h = scipy_spatial_tree_dist(x_nodes)
 
-        index_four_smallest = sorted(range(len(dist)), key=lambda sub: dist[sub])[
-            :5
-        ]  # get the index of the four smallest index, the first one is always zero, so 5 here
+    # h = np.zeros(num_nodes)
+    # for i in range(num_nodes):
+    #    dist = (
+    #        (x_nodes[i, 0] - x_nodes[:, 0]) ** 2 + (x_nodes[i, 1] - x_nodes[:, 1]) ** 2
+    #    ) ** 0.5
 
-        h[i] = dist[index_four_smallest][
-            dist[index_four_smallest].tolist().index(max(dist[index_four_smallest]))
-        ]
+    #   index_four_smallest = sorted(range(len(dist)), key=lambda sub: dist[sub])[
+    #        :5
+    #   ]  # get the index of the four smallest index, the first one is always zero, so 5 here
+
+    #    h[i] = dist[index_four_smallest][
+    #        dist[index_four_smallest].tolist().index(max(dist[index_four_smallest]))
+    #    ]
 
     a = c * h  # shape: (num_nodes,)
 

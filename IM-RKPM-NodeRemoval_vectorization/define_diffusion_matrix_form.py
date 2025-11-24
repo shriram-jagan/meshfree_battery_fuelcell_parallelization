@@ -1,4 +1,4 @@
-from common import bmat, csr_array, np
+from common import csr_array, np
 from common import sparse as sp
 from common import spsolve, time, use_matplotlib
 
@@ -91,7 +91,11 @@ def diffusion_matrix(
     f1 = f_c * dt / Fday - (K_cc @ c_n1) * dt - M_matrix @ (c_n1 - c_n)
     f2 = f_phi - K_phiphi @ phi_n1
 
-    K = bmat([[K11, K12], [K21, K22]])
+    # TODO: This is a workaround until legate-sparse supports bmat
+    # K = bmat([[K11, K12], [K21, K22]])
+    K = csr_array(
+        np.block([[K11.toarray(), K12.toarray()], [K21.toarray(), K22.toarray()]])
+    )
     f = np.concatenate((f1, f2))
 
     return K, f
