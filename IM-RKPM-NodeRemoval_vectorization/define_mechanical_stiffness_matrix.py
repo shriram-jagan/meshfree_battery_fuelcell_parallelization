@@ -1,4 +1,4 @@
-from common import bmat, csr_array, np
+from common import csr_array, np
 from common import sparse as sp
 from common import spsolve, time, use_matplotlib
 
@@ -141,8 +141,18 @@ def mechanical_stiffness_matrix(
         @ grad_shape_func_y
     )
 
-    K_mechanical = bmat(
-        [[K11_mechanical, K12_mechanical], [K21_mechanical, K22_mechanical]]
+    # this is a workaround until legate-sparse supports bmat
+    # K_mechanical = bmat(
+    #    [[K11_mechanical, K12_mechanical], [K21_mechanical, K22_mechanical]]
+    # )
+
+    K_mechanical = csr_array(
+        np.block(
+            [
+                [K11_mechanical.toarray(), K12_mechanical].toarray(),
+                [K21_mechanical.toarray(), K22_mechanical.toarray()],
+            ]
+        )
     )
 
     ### sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T is sparse matrix, (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T*grad_shape_func_x is dot product of two sparse matrixs
