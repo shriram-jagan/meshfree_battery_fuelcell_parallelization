@@ -1,6 +1,7 @@
 from common import csr_array, np
 from common import sparse as sp
 from common import spsolve, time, use_matplotlib
+from geometry_data import GeometryData, default_geometry
 from material_properties import MaterialProperties
 
 start_time = time()
@@ -41,10 +42,8 @@ print("Define domain and parameters")
 ###############################
 # Define domain
 ###############################
-x_min = -10e-6
-x_max = 10e-6
-y_min = -10e-6
-y_max = 10e-6
+# Use geometry data from geometry_data.py
+geom = default_geometry  # You can switch to single_grain_geometry if needed
 
 ###############################
 # Define time step
@@ -61,35 +60,10 @@ Node_removal = "True"
 # geometry
 ###############################
 
-single_grain = "False"  # True: single grain, False: multiple grains read from an image
-
-if single_grain == "True":
-    angle = 0
-else:
-    angle = [
-        26.0,
-        np.pi,
-        75.0,
-        np.pi / 4.0,
-        121.0,
-        np.pi * 2.0 / 3.0,
-        149.0,
-        np.pi / 2.0,
-        90.0,
-        np.pi / 3.0,
-        81.0,
-        np.pi / 4.0,
-        37.0,
-        np.pi * 2.0 / 3.0,
-        110.0,
-        0.0,
-    ]
-    # angle = [26.0, 0.0, 75.0, 0.0, 121.0,0.0, 149.0, 0.0, 90.0, 0.0, 81.0, 0.0, 37.0, 0.0, 110.0, 0.0]
-
-    # angle = {"26":np.pi/6, "75":np.pi/12, "121":np.pi/3, "149":np.pi/6, "90":np.pi/3, "81":np.pi/4, "37":np.pi/12, "110":0} numba doesn't support library, so we are
-    # using a list to save the angle of grain
-
-n_boundaries = 4
+# Geometry configuration is loaded from GeometryData
+single_grain = geom.single_grain  # "True" or "False" as string
+angle = geom.angle
+n_boundaries = geom.n_boundaries
 
 ###############################
 # Define material properties
@@ -108,37 +82,13 @@ integral_method = "gauss"
 damage_model = "ON"  # ON or OFF
 
 if integral_method == "gauss":
-    # Define Guass int points and cells
-    x_G_domain_rec = [
-        [-(3**0.5) / 3, -(3**0.5) / 3],
-        [-(3**0.5) / 3, 3**0.5 / 3],
-        [3**0.5 / 3, -(3**0.5) / 3],
-        [3**0.5 / 3, 3**0.5 / 3],
-    ]  # coordinates of 2D Gauss points in Neutral coordinate system for square doamin
-    x_G_domain_tri = [
-        [1.0 / 6.0, 2.0 / 3.0],
-        [1.0 / 6.0, 1.0 / 6.0],
-        [2.0 / 3.0, 1.0 / 6.0],
-    ]
-    weight_G_domain_rec = [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-    ]  # weight of each 2D Gauss points for rectangular
-    weight_G_domain_tri = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
-    x_G_boundary = [
-        -((3.0 / 7.0 + 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5),
-        -((3.0 / 7.0 - 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5),
-        (3.0 / 7.0 - 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5,
-        (3.0 / 7.0 + 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5,
-    ]  # [-0.9491079123427585,-0.7415311855993945,-0.4058451513773972,0,0.4058451513773972,0.7415311855993945,0.9491079123427585]#                   # coordinates of 1D Gauss points
-    weight_G_boundary = [
-        0.5 - 30**0.5 / 36,
-        0.5 + 30**0.5 / 36,
-        0.5 + 30**0.5 / 36,
-        0.5 - 30**0.5 / 36,
-    ]  # [0.1294849661688697,0.2797053914892766,0.3818300505051189,0.4179591836734694,0.3818300505051189,0.2797053914892766,0.1294849661688697]#         # weight of each 1D Gauss points
+    # Use Gauss integration points from geometry data
+    x_G_domain_rec = geom.x_G_domain_rec
+    x_G_domain_tri = geom.x_G_domain_tri
+    weight_G_domain_rec = geom.weight_G_domain_rec
+    weight_G_domain_tri = geom.weight_G_domain_tri
+    x_G_boundary = geom.x_G_boundary
+    weight_G_boundary = geom.weight_G_boundary
 
 def_para_time = time()
 
@@ -153,7 +103,9 @@ if single_grain == "True":
     n_intervals = 20  # number of intervals along each direction
     n_nodes = n_intervals + 1  # number of nodes along each direction,
     x_nodes = np.array(
-        get_x_nodes_single_grain(n_nodes, x_min, x_max, n_intervals, y_min, y_max)
+        get_x_nodes_single_grain(
+            n_nodes, geom.x_min, geom.x_max, n_intervals, geom.y_min, geom.y_max
+        )
     )  # types: array
     num_interface_segments = 0
     interface_nodes = []
@@ -184,7 +136,7 @@ else:
         x_nodes_interface_unique,
         x_nodes_interface_unique_id,
     ) = get_x_nodes_multi_grain(
-        x_min, x_max, y_min, y_max, num_pixels_x, num_pixels_y, img_
+        geom.x_min, geom.x_max, geom.y_min, geom.y_max, num_pixels_x, num_pixels_y, img_
     )
     num_interface_segments = np.shape(interface_segments)[0]
     interface_nodes = np.asarray(interface_segments).reshape(
@@ -229,15 +181,21 @@ print("define gauss points")
 if integral_method == "gauss":
     if single_grain == "True":
         x_G, det_J_time_weight = x_G_and_def_J_time_weight_structured(
-            n_intervals, x_min, x_max, y_min, y_max, x_G_domain_rec, weight_G_domain_rec
+            n_intervals,
+            geom.x_min,
+            geom.x_max,
+            geom.y_min,
+            geom.y_max,
+            x_G_domain_rec,
+            weight_G_domain_rec,
         )
         x_G_b, det_J_b_time_weight = x_G_b_and_det_J_b_structured(
             n_boundaries,
             n_intervals,
-            x_min,
-            x_max,
-            y_min,
-            y_max,
+            geom.x_min,
+            geom.x_max,
+            geom.y_min,
+            geom.y_max,
             x_G_boundary,
             weight_G_boundary,
         )
@@ -272,10 +230,10 @@ if integral_method == "gauss":
         top_boundary_cell_nodes_list = [list(x) for x in top_boundary_cell_nodes_list]
         x_G_b, det_J_b_time_weight, gauss_angle_b, Gauss_b_grain_id = (
             x_G_b_and_det_J_b_multi_grains(
-                x_min,
-                x_max,
-                y_min,
-                y_max,
+                geom.x_min,
+                geom.x_max,
+                geom.y_min,
+                geom.y_max,
                 bottom_boundary_cell_nodes_list,
                 right_boundary_cell_nodes_list,
                 top_boundary_cell_nodes_list,
@@ -346,7 +304,7 @@ def scipy_spatial_tree_dist(x_nodes):
 
 if single_grain == "True":
     a = (
-        c * (x_max - x_min) / n_intervals * np.ones(num_nodes)
+        c * (geom.x_max - geom.x_min) / n_intervals * np.ones(num_nodes)
     )  # compact support size, shape: (num_nodes,)
 else:
 
