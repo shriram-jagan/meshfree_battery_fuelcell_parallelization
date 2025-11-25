@@ -3,8 +3,6 @@ from common import csr_array, np, spsolve, time, use_matplotlib
 if use_matplotlib:
     import matplotlib.pyplot as plt
 
-start_time = time()
-
 
 ###################################################################
 # define exchange current density, j0, which depends on x,

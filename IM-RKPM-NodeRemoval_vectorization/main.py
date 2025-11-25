@@ -1,6 +1,9 @@
 from common import csr_array, np
 from common import sparse as sp
 from common import spsolve, time, use_matplotlib
+from geometry_data import GeometryData, default_geometry
+from material_properties import MaterialProperties
+from simulation_config import SimulationConfig, default_config
 
 start_time = time()
 if use_matplotlib:
@@ -34,126 +37,59 @@ from shape_func_correction_node_removal import modify_shape_func_node_removal
 from shape_func_interface_nodes import compute_phi_M_int, shape_grad_shape_func_int
 from shape_function_in_domain import compute_phi_M, shape_grad_shape_func
 
+# from shape_function_in_domain_vectorized import compute_phi_M_vectorized
+
 print("Define domain and parameters")
 ###############################
-# Define domain
+# Configuration
 ###############################
-x_min = -10e-6
-x_max = 10e-6
-y_min = -10e-6
-y_max = 10e-6
+# Load configurations from modules
+geom = default_geometry  # You can switch to single_grain_geometry if needed
+sim_config = default_config  # You can switch to other configs like fast_test_config
+mat_props = MaterialProperties()  # Material properties instance
+
+# Validate configuration
+sim_config.validate()
 
 ###############################
 # Define time step
 ###############################
-t = 1.0  # simulate for 10s
-nt = 10  # nt is the number of time steps
-dt = t / nt  # time step
+# Time configuration from sim_config
+t = sim_config.time.t
+nt = sim_config.time.nt
+dt = sim_config.time.dt
 
-IM_RKPM = "True"  # if it is interfacial modified RKPM
-
-Node_removal = "True"
+# Model configuration from sim_config
+IM_RKPM = sim_config.model.IM_RKPM
+Node_removal = sim_config.model.Node_removal
 
 ###############################
 # geometry
 ###############################
 
-single_grain = "False"  # True: single grain, False: multiple grains read from an image
-
-if single_grain == "True":
-    angle = 0
-else:
-    angle = [
-        26.0,
-        np.pi,
-        75.0,
-        np.pi / 4.0,
-        121.0,
-        np.pi * 2.0 / 3.0,
-        149.0,
-        np.pi / 2.0,
-        90.0,
-        np.pi / 3.0,
-        81.0,
-        np.pi / 4.0,
-        37.0,
-        np.pi * 2.0 / 3.0,
-        110.0,
-        0.0,
-    ]
-    # angle = [26.0, 0.0, 75.0, 0.0, 121.0,0.0, 149.0, 0.0, 90.0, 0.0, 81.0, 0.0, 37.0, 0.0, 110.0, 0.0]
-
-    # angle = {"26":np.pi/6, "75":np.pi/12, "121":np.pi/3, "149":np.pi/6, "90":np.pi/3, "81":np.pi/4, "37":np.pi/12, "110":0} numba doesn't support library, so we are
-    # using a list to save the angle of grain
-
-n_boundaries = 4
-
-###############################
-# Define material properties
-###############################
-Fday = 9.6485e4  # Faraday constant
-R = 8.3145e0  # gas constant
-Tk = 3.0515e2  # temperature in K
-
-c_max = 49600.0  # maximum concentration
-
-k_con = 10.0  # conductivity
-
-Dx_div_Dy = 100.0
-
-j_applied = -15.0  # j_applied
-
-E = 138.87e9  # Youngs modulus (Pa)
-nu = 0.3  # Poisson ratio
-lambda_mechanical = E * nu / (1 + nu) / (1 - 2 * nu)
-mu = E / 2 / (1 + nu)  # lamme constants
-
-k_i = 0.0125
-k_f = 0.015
+# Geometry configuration is loaded from GeometryData
+single_grain = geom.single_grain  # "True" or "False" as string
+angle = geom.angle
+n_boundaries = geom.n_boundaries
 
 
 #######################################
 # differential method
 #######################################
 
-differential_method = "direct"  # 'implicite' or 'direct'    # specify which differential method to use, implicite: H1, H2, direct: directly differentiate
-# if the IM_RKPM=True, differential method must be set to be direct.
-
-integral_method = "gauss"
-damage_model = "ON"  # ON or OFF
+# Numerical and model configuration from sim_config
+differential_method = sim_config.numerical.differential_method
+integral_method = sim_config.numerical.integral_method
+damage_model = sim_config.model.damage_model
 
 if integral_method == "gauss":
-    # Define Guass int points and cells
-    x_G_domain_rec = [
-        [-(3**0.5) / 3, -(3**0.5) / 3],
-        [-(3**0.5) / 3, 3**0.5 / 3],
-        [3**0.5 / 3, -(3**0.5) / 3],
-        [3**0.5 / 3, 3**0.5 / 3],
-    ]  # coordinates of 2D Gauss points in Neutral coordinate system for square doamin
-    x_G_domain_tri = [
-        [1.0 / 6.0, 2.0 / 3.0],
-        [1.0 / 6.0, 1.0 / 6.0],
-        [2.0 / 3.0, 1.0 / 6.0],
-    ]
-    weight_G_domain_rec = [
-        1.0,
-        1.0,
-        1.0,
-        1.0,
-    ]  # weight of each 2D Gauss points for rectangular
-    weight_G_domain_tri = [1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
-    x_G_boundary = [
-        -((3.0 / 7.0 + 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5),
-        -((3.0 / 7.0 - 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5),
-        (3.0 / 7.0 - 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5,
-        (3.0 / 7.0 + 2.0 / 7.0 * (1.2) ** 0.5) ** 0.5,
-    ]  # [-0.9491079123427585,-0.7415311855993945,-0.4058451513773972,0,0.4058451513773972,0.7415311855993945,0.9491079123427585]#                   # coordinates of 1D Gauss points
-    weight_G_boundary = [
-        0.5 - 30**0.5 / 36,
-        0.5 + 30**0.5 / 36,
-        0.5 + 30**0.5 / 36,
-        0.5 - 30**0.5 / 36,
-    ]  # [0.1294849661688697,0.2797053914892766,0.3818300505051189,0.4179591836734694,0.3818300505051189,0.2797053914892766,0.1294849661688697]#         # weight of each 1D Gauss points
+    # Use Gauss integration points from geometry data
+    x_G_domain_rec = geom.x_G_domain_rec
+    x_G_domain_tri = geom.x_G_domain_tri
+    weight_G_domain_rec = geom.weight_G_domain_rec
+    weight_G_domain_tri = geom.weight_G_domain_tri
+    x_G_boundary = geom.x_G_boundary
+    weight_G_boundary = geom.weight_G_boundary
 
 def_para_time = time()
 
@@ -168,7 +104,9 @@ if single_grain == "True":
     n_intervals = 20  # number of intervals along each direction
     n_nodes = n_intervals + 1  # number of nodes along each direction,
     x_nodes = np.array(
-        get_x_nodes_single_grain(n_nodes, x_min, x_max, n_intervals, y_min, y_max)
+        get_x_nodes_single_grain(
+            n_nodes, geom.x_min, geom.x_max, n_intervals, geom.y_min, geom.y_max
+        )
     )  # types: array
     num_interface_segments = 0
     interface_nodes = []
@@ -199,7 +137,7 @@ else:
         x_nodes_interface_unique,
         x_nodes_interface_unique_id,
     ) = get_x_nodes_multi_grain(
-        x_min, x_max, y_min, y_max, num_pixels_x, num_pixels_y, img_
+        geom.x_min, geom.x_max, geom.y_min, geom.y_max, num_pixels_x, num_pixels_y, img_
     )
     num_interface_segments = np.shape(interface_segments)[0]
     interface_nodes = np.asarray(interface_segments).reshape(
@@ -244,15 +182,21 @@ print("define gauss points")
 if integral_method == "gauss":
     if single_grain == "True":
         x_G, det_J_time_weight = x_G_and_def_J_time_weight_structured(
-            n_intervals, x_min, x_max, y_min, y_max, x_G_domain_rec, weight_G_domain_rec
+            n_intervals,
+            geom.x_min,
+            geom.x_max,
+            geom.y_min,
+            geom.y_max,
+            x_G_domain_rec,
+            weight_G_domain_rec,
         )
         x_G_b, det_J_b_time_weight = x_G_b_and_det_J_b_structured(
             n_boundaries,
             n_intervals,
-            x_min,
-            x_max,
-            y_min,
-            y_max,
+            geom.x_min,
+            geom.x_max,
+            geom.y_min,
+            geom.y_max,
             x_G_boundary,
             weight_G_boundary,
         )
@@ -287,10 +231,10 @@ if integral_method == "gauss":
         top_boundary_cell_nodes_list = [list(x) for x in top_boundary_cell_nodes_list]
         x_G_b, det_J_b_time_weight, gauss_angle_b, Gauss_b_grain_id = (
             x_G_b_and_det_J_b_multi_grains(
-                x_min,
-                x_max,
-                y_min,
-                y_max,
+                geom.x_min,
+                geom.x_max,
+                geom.y_min,
+                geom.y_max,
                 bottom_boundary_cell_nodes_list,
                 right_boundary_cell_nodes_list,
                 top_boundary_cell_nodes_list,
@@ -334,15 +278,12 @@ print(
 print("Compute shape function and its gradient in domain")
 
 
-HT0 = np.array([1, 0, 0], dtype=np.float64)  # transpose of the basis vector H
-HT1 = np.array(
-    [0, -1, 0], dtype=np.float64
-)  # for computation of gradient of shape function, d/dx
-HT2 = np.array(
-    [0, 0, -1], dtype=np.float64
-)  # for computation of gradient of shape function, d/dy
+# Basis vectors and numerical parameters from sim_config
+HT0 = sim_config.basis_vectors.HT0
+HT1 = sim_config.basis_vectors.HT1
+HT2 = sim_config.basis_vectors.HT2
 
-c = 2  # support size
+c = sim_config.numerical.c  # support size
 
 print(f"Number of nodes: {num_nodes}")
 
@@ -361,7 +302,7 @@ def scipy_spatial_tree_dist(x_nodes):
 
 if single_grain == "True":
     a = (
-        c * (x_max - x_min) / n_intervals * np.ones(num_nodes)
+        c * (geom.x_max - geom.x_min) / n_intervals * np.ones(num_nodes)
     )  # compact support size, shape: (num_nodes,)
 else:
 
@@ -690,7 +631,7 @@ print(
 # Compute shape function and its gradient on boundaries
 ########################################################
 
-print("Compute shape function and its gradient on boundaries")
+print("Compute shape function and its gradient on boundaries", flush=True)
 
 M_b = np.array(
     [np.zeros((3, 3)) for _ in range(num_gauss_points_on_boundary)], dtype=np.float64
@@ -850,7 +791,7 @@ print(
     )
 )
 
-print("assemble the matrix and solve all")
+print("assemble the matrix and solve all", flush=True)
 
 ###################################################
 # assemble the stiffness matrix for mechanical part
@@ -863,39 +804,45 @@ D_damage = np.zeros((num_gauss_points_in_domain, 1))
 D_damage_int = np.zeros((num_interface_nodes, 1))
 
 # initialize the history parameter k
-k = np.ones((num_gauss_points_in_domain, 1)) * k_i
+k = np.ones((num_gauss_points_in_domain, 1)) * mat_props.k_i
 
 # initialize the history parameter k on interface
-k_int = np.ones((num_interface_nodes, 1)) * k_i
+k_int = np.ones((num_interface_nodes, 1)) * mat_props.k_i
 
 ########################################################################
 # assemble the matrix for diffusion problem and solve all
 ########################################################################
 
-ini_charge_state = 0.92
+# Initial conditions from sim_config
+ini_charge_state = sim_config.initial_conditions.ini_charge_state
 
 c_ini = (
-    np.array(np.ones((num_gauss_points_in_domain, 1))) * c_max * ini_charge_state
+    np.array(np.ones((num_gauss_points_in_domain, 1)))
+    * mat_props.c_max
+    * ini_charge_state
 )  # initial concentration at all gauss points, shape:(num_gauss_points_in_domain,1)
 
 a_lattice_ini, da_lattice_ini = alpha_lattice_complex(
-    c_ini / c_max
+    c_ini / mat_props.c_max
 )  # initial value of alpha_lattice and dalph_lattice/dx
 
 c_lattice_ini, dc_lattice_ini = c_lattice_complex(
-    c_ini / c_max
+    c_ini / mat_props.c_max
 )  # initial value of c_lattice and dc_lattice/dx
 
 c_n = (
-    np.array(np.ones((num_nodes, 1))) * c_max * ini_charge_state
+    np.array(np.ones((num_nodes, 1))) * mat_props.c_max * ini_charge_state
 )  # initial concentration at nodes
-x_n = c_n / c_max  # inital x
+x_n = c_n / mat_props.c_max  # inital x
 
-ini_potential = 3.712
+ini_potential = sim_config.initial_conditions.ini_potential
 phi_n = np.array(np.ones((num_nodes, 1))) * ini_potential  # initial potential
 
-dc_threshold = 1.0e-9
-dphi_threshold = 1.0e-9  # when the norm of dc and dphi smaller than the threshold, stop newton iteratio nand move to next time step
+# Convergence thresholds from sim_config
+dc_threshold = sim_config.convergence.dc_threshold
+dphi_threshold = (
+    sim_config.convergence.dphi_threshold
+)  # when the norm of dc and dphi smaller than the threshold, stop newton iteration and move to next time step
 
 dc = np.array(np.zeros((num_nodes, 1)))
 dphi = np.array(
@@ -956,7 +903,7 @@ if Node_removal == "True":
     all_damaged_interface_nodes_array = np.zeros((nt, num_interface_nodes))
 
 for ii in range(nt):
-    print("time_step:" + str(ii))
+    print("time_step:" + str(ii), flush=True)
 
     t = dt + dt * ii
 
@@ -1279,28 +1226,30 @@ for ii in range(nt):
             phi_n1[all_damaged_interface_nodes_id] = 0.0
 
     while (
-        newton_iter_num < 10
-    ):  # (np.linalg.norm(dc)/c_max/ini_charge_state>dc_threshold or np.linalg.norm(dphi)>dphi_threshold) or newton_iter_num==0:
+        newton_iter_num < sim_config.convergence.max_newton_iter
+    ):  # (np.linalg.norm(dc)/mat_props.c_max/ini_charge_state>dc_threshold or np.linalg.norm(dphi)>dphi_threshold) or newton_iter_num==0:
 
         def_initial = time()
 
         newton_iter_num = newton_iter_num + 1
 
-        Dx, dDx_dx = Dn_complex(shape_func @ (c_n1 / c_max), D_damage)
+        Dx, dDx_dx = Dn_complex(shape_func @ (c_n1 / mat_props.c_max), D_damage)
 
-        dDx_dc = dDx_dx / c_max  # diffucivity and dD/dc, size=(n_nodes*n_nodes, 1)
+        dDx_dc = (
+            dDx_dx / mat_props.c_max
+        )  # diffucivity and dD/dc, size=(n_nodes*n_nodes, 1)
 
-        Dy = Dx / Dx_div_Dy
-        dDy_dc = dDx_dc / Dx_div_Dy
+        Dy = Dx / mat_props.Dx_div_Dy
+        dDy_dc = dDx_dc / mat_props.Dx_div_Dy
 
-        j0, dj0_dx = i_0_complex(shape_func_b @ (c_n1 / c_max))
-        dj0_dc = dj0_dx / c_max
+        j0, dj0_dx = i_0_complex(shape_func_b @ (c_n1 / mat_props.c_max))
+        dj0_dc = dj0_dx / mat_props.c_max
 
-        E_eq, dE_eq_dx = ocp_complex(shape_func_b @ (c_n1 / c_max))
-        dE_eq_dc = dE_eq_dx / c_max
+        E_eq, dE_eq_dx = ocp_complex(shape_func_b @ (c_n1 / mat_props.c_max))
+        dE_eq_dc = dE_eq_dx / mat_props.c_max
 
         djbv_deta, djbv_dj0, j_BV = i_se(
-            shape_func_b @ phi_n1, j0, E_eq, Fday, R, Tk
+            shape_func_b @ phi_n1, j0, E_eq, mat_props.Fday, mat_props.R, mat_props.Tk
         )  # di/d\eta and dj/dj0 at cn and phi_n;
 
         #!!!! for all parameters denpend on cencentration or potential, if you want to investigate them at the gauss point, always calculate the concentration
@@ -1357,11 +1306,11 @@ for ii in range(nt):
             djbv_dj0,
             dj0_dc,
             j_BV,
-            j_applied,
+            mat_props.j_applied,
             x_G_b,
-            k_con,
+            mat_props.k_con,
             dt,
-            Fday,
+            mat_props.Fday,
             c_n,
             phi_n1,
         )
@@ -1403,7 +1352,7 @@ for ii in range(nt):
         print(
             "Number of Newton Iteration: " + str(newton_iter_num),
             "in Time Step: " + str(ii),
-            np.linalg.norm(dc) / (c_max * ini_charge_state),
+            np.linalg.norm(dc) / (mat_props.c_max * ini_charge_state),
             np.linalg.norm(dphi),
         )
 
@@ -1465,7 +1414,11 @@ for ii in range(nt):
     print("define mechanical stiffness matrix")
 
     C11, C12, C13, C22, C23, C33 = mechanical_C_tensor(
-        num_gauss_points_in_domain, D_damage, lambda_mechanical, mu, gauss_angle
+        num_gauss_points_in_domain,
+        D_damage,
+        mat_props.lambda_mechanical(),
+        mat_props.mu,
+        gauss_angle,
     )
 
     K_mechanical = mechanical_stiffness_matrix(
@@ -1475,7 +1428,7 @@ for ii in range(nt):
         C22,
         C23,
         C33,
-        E,
+        mat_props.E,
         x_nodes,
         num_gauss_points_in_domain,
         grad_shape_func_x_times_det_J_time_weight,
@@ -1510,12 +1463,12 @@ for ii in range(nt):
     )
 
     # compute Beta1
-    a_lattice, da_lattice_dx = alpha_lattice_complex(c_G_domain / c_max)
+    a_lattice, da_lattice_dx = alpha_lattice_complex(c_G_domain / mat_props.c_max)
     delta_a_lattice = a_lattice - a_lattice_ini
     delta_c = c_G_domain - c_ini
     beta_1 = delta_a_lattice / a_lattice_ini  # all of beta_1 and delta_c are np array
     # compute beta_2
-    c_lattice, dc_lattice_dx = c_lattice_complex(c_G_domain / c_max)
+    c_lattice, dc_lattice_dx = c_lattice_complex(c_G_domain / mat_props.c_max)
     delta_c_lattice = c_lattice - c_lattice_ini
     beta_2 = delta_c_lattice / c_lattice_ini  # all of beta_2 and delta_c are np array
 
@@ -1606,14 +1559,14 @@ for ii in range(nt):
 
     k = np.fmax(epsilon_e_eq, k)
 
-    D_damage[np.logical_and(k > k_i, k <= k_f)] = (
-        (k[np.logical_and(k > k_i, k <= k_f)] - k_i)
-        / (k_f - k_i)
-        * k_f
-        / k[np.logical_and(k > k_i, k <= k_f)]
+    D_damage[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)] = (
+        (k[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)] - mat_props.k_i)
+        / (mat_props.k_f - mat_props.k_i)
+        * mat_props.k_f
+        / k[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)]
     )
-    D_damage[k > k_f] = 1.0
-    D_damage[k <= k_i] = 0.0
+    D_damage[k > mat_props.k_f] = 1.0
+    D_damage[k <= mat_props.k_i] = 0.0
 
     #############################################################
     # calculate the damage factor on all nodes on interfaces
@@ -1637,12 +1590,14 @@ for ii in range(nt):
     )  # shear strain at nodes on interfaces, (grad_shape_func_x*uy+ grad_shape_func_y*ux) is an array
 
     c_int = np.dot(shape_func_int.toarray(), c_n)
-    a_lattice_int, da_lattice_dx_int = alpha_lattice_complex(c_int / c_max)
+    a_lattice_int, da_lattice_dx_int = alpha_lattice_complex(c_int / mat_props.c_max)
 
     c_ini_int = (
-        np.array(np.ones((num_interface_nodes, 1))) * c_max * ini_charge_state
+        np.array(np.ones((num_interface_nodes, 1))) * mat_props.c_max * ini_charge_state
     )  # initial concentration at all gauss points, shape:(num_gauss_points_in_domain,1)
-    a_lattice_ini_int, da_lattice_ini_int = alpha_lattice_complex(c_ini_int / c_max)
+    a_lattice_ini_int, da_lattice_ini_int = alpha_lattice_complex(
+        c_ini_int / mat_props.c_max
+    )
 
     delta_a_lattice_int = a_lattice_int - a_lattice_ini_int
     delta_c_int = c_int - c_ini_int
@@ -1651,8 +1606,10 @@ for ii in range(nt):
     )  # all of beta_1 and delta_c are np array
 
     # compute beta_2
-    c_lattice_int, dc_lattice_dx_int = c_lattice_complex(c_int / c_max)
-    c_lattice_ini_int, dc_lattice_dx_ini_int = c_lattice_complex(c_ini_int / c_max)
+    c_lattice_int, dc_lattice_dx_int = c_lattice_complex(c_int / mat_props.c_max)
+    c_lattice_ini_int, dc_lattice_dx_ini_int = c_lattice_complex(
+        c_ini_int / mat_props.c_max
+    )
 
     delta_c_lattice_int = c_lattice_int - c_lattice_ini_int
     beta_2_int = (
@@ -1683,14 +1640,17 @@ for ii in range(nt):
 
     k_int = np.fmax(epsilon_e_eq_int, k_int)
 
-    D_damage_int[np.logical_and(k_int > k_i, k_int <= k_f)] = (
-        (k_int[np.logical_and(k_int > k_i, k_int <= k_f)] - k_i)
-        / (k_f - k_i)
-        * k_f
-        / k_int[np.logical_and(k_int > k_i, k_int <= k_f)]
+    D_damage_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)] = (
+        (
+            k_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)]
+            - mat_props.k_i
+        )
+        / (mat_props.k_f - mat_props.k_i)
+        * mat_props.k_f
+        / k_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)]
     )
-    D_damage_int[k_int > k_f] = 1.0
-    D_damage_int[k_int <= k_i] = 0.0
+    D_damage_int[k_int > mat_props.k_f] = 1.0
+    D_damage_int[k_int <= mat_props.k_i] = 0.0
 
     if Node_removal == "True":
         # # for da_in in all_damaged_interface_nodes_id:
@@ -1733,7 +1693,11 @@ for ii in range(nt):
     # update the damge factor
 
     C11, C12, C13, C22, C23, C33 = mechanical_C_tensor(
-        num_gauss_points_in_domain, D_damage, lambda_mechanical, mu, gauss_angle
+        num_gauss_points_in_domain,
+        D_damage,
+        mat_props.lambda_mechanical(),
+        mat_props.mu,
+        gauss_angle,
     )
 
     sigma_x = (
