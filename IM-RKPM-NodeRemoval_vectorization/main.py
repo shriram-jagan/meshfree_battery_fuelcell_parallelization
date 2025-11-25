@@ -34,6 +34,8 @@ from shape_func_correction_node_removal import modify_shape_func_node_removal
 from shape_func_interface_nodes import compute_phi_M_int, shape_grad_shape_func_int
 from shape_function_in_domain import compute_phi_M, shape_grad_shape_func
 
+# from shape_function_in_domain_vectorized import compute_phi_M_vectorized
+
 print("Define domain and parameters")
 ###############################
 # Define domain
@@ -47,7 +49,7 @@ y_max = 10e-6
 # Define time step
 ###############################
 t = 1.0  # simulate for 10s
-nt = 10  # nt is the number of time steps
+nt = 2  # nt is the number of time steps
 dt = t / nt  # time step
 
 IM_RKPM = "True"  # if it is interfacial modified RKPM
@@ -690,7 +692,7 @@ print(
 # Compute shape function and its gradient on boundaries
 ########################################################
 
-print("Compute shape function and its gradient on boundaries")
+print("Compute shape function and its gradient on boundaries", flush=True)
 
 M_b = np.array(
     [np.zeros((3, 3)) for _ in range(num_gauss_points_on_boundary)], dtype=np.float64
@@ -850,7 +852,7 @@ print(
     )
 )
 
-print("assemble the matrix and solve all")
+print("assemble the matrix and solve all", flush=True)
 
 ###################################################
 # assemble the stiffness matrix for mechanical part
@@ -956,7 +958,7 @@ if Node_removal == "True":
     all_damaged_interface_nodes_array = np.zeros((nt, num_interface_nodes))
 
 for ii in range(nt):
-    print("time_step:" + str(ii))
+    print("time_step:" + str(ii), flush=True)
 
     t = dt + dt * ii
 

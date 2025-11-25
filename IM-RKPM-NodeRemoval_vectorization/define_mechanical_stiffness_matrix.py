@@ -146,10 +146,15 @@ def mechanical_stiffness_matrix(
     #    [[K11_mechanical, K12_mechanical], [K21_mechanical, K22_mechanical]]
     # )
 
+    print(f"type of K11_mechanical: {K11_mechanical}")
+    print(f"type of K12_mechanical: {K12_mechanical}")
+    print(f"type of K21_mechanical: {K21_mechanical}")
+    print(f"type of K22_mechanical: {K22_mechanical}")
+
     K_mechanical = csr_array(
         np.block(
             [
-                [K11_mechanical.toarray(), K12_mechanical].toarray(),
+                [K11_mechanical.toarray(), K12_mechanical.toarray()],
                 [K21_mechanical.toarray(), K22_mechanical.toarray()],
             ]
         )

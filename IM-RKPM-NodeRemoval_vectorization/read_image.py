@@ -1,6 +1,17 @@
 from common import csr_array, np, spsolve, time, use_matplotlib
 
-if use_matplotlib:
+try:
+    if use_matplotlib:
+        import matplotlib.pyplot as plt
+    else:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+except:
+    import matplotlib
+
+    matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
 start_time = time()
