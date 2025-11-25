@@ -1,5 +1,6 @@
 try:
-    # raise ImportError  # Force use of regular NumPy instead of legate
+    print("Forcing use of NumPy backend by rasising a false error")
+    raise ImportError  # Force use of regular NumPy instead of legate
     import cupynumeric as np
     import legate_sparse as sparse
     import legate_sparse.linalg as linalg
