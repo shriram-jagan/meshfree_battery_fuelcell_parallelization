@@ -1,6 +1,7 @@
 from common import csr_array, np
 from common import sparse as sp
 from common import spsolve, time, use_matplotlib
+from material_properties import MaterialProperties
 
 start_time = time()
 if use_matplotlib:
@@ -93,25 +94,7 @@ n_boundaries = 4
 ###############################
 # Define material properties
 ###############################
-Fday = 9.6485e4  # Faraday constant
-R = 8.3145e0  # gas constant
-Tk = 3.0515e2  # temperature in K
-
-c_max = 49600.0  # maximum concentration
-
-k_con = 10.0  # conductivity
-
-Dx_div_Dy = 100.0
-
-j_applied = -15.0  # j_applied
-
-E = 138.87e9  # Youngs modulus (Pa)
-nu = 0.3  # Poisson ratio
-lambda_mechanical = E * nu / (1 + nu) / (1 - 2 * nu)
-mu = E / 2 / (1 + nu)  # lamme constants
-
-k_i = 0.0125
-k_f = 0.015
+mat_props = MaterialProperties()  # Instantiate the MaterialProperties class
 
 
 #######################################
@@ -865,10 +848,10 @@ D_damage = np.zeros((num_gauss_points_in_domain, 1))
 D_damage_int = np.zeros((num_interface_nodes, 1))
 
 # initialize the history parameter k
-k = np.ones((num_gauss_points_in_domain, 1)) * k_i
+k = np.ones((num_gauss_points_in_domain, 1)) * mat_props.k_i
 
 # initialize the history parameter k on interface
-k_int = np.ones((num_interface_nodes, 1)) * k_i
+k_int = np.ones((num_interface_nodes, 1)) * mat_props.k_i
 
 ########################################################################
 # assemble the matrix for diffusion problem and solve all
@@ -877,21 +860,23 @@ k_int = np.ones((num_interface_nodes, 1)) * k_i
 ini_charge_state = 0.92
 
 c_ini = (
-    np.array(np.ones((num_gauss_points_in_domain, 1))) * c_max * ini_charge_state
+    np.array(np.ones((num_gauss_points_in_domain, 1)))
+    * mat_props.c_max
+    * ini_charge_state
 )  # initial concentration at all gauss points, shape:(num_gauss_points_in_domain,1)
 
 a_lattice_ini, da_lattice_ini = alpha_lattice_complex(
-    c_ini / c_max
+    c_ini / mat_props.c_max
 )  # initial value of alpha_lattice and dalph_lattice/dx
 
 c_lattice_ini, dc_lattice_ini = c_lattice_complex(
-    c_ini / c_max
+    c_ini / mat_props.c_max
 )  # initial value of c_lattice and dc_lattice/dx
 
 c_n = (
-    np.array(np.ones((num_nodes, 1))) * c_max * ini_charge_state
+    np.array(np.ones((num_nodes, 1))) * mat_props.c_max * ini_charge_state
 )  # initial concentration at nodes
-x_n = c_n / c_max  # inital x
+x_n = c_n / mat_props.c_max  # inital x
 
 ini_potential = 3.712
 phi_n = np.array(np.ones((num_nodes, 1))) * ini_potential  # initial potential
@@ -1282,27 +1267,29 @@ for ii in range(nt):
 
     while (
         newton_iter_num < 10
-    ):  # (np.linalg.norm(dc)/c_max/ini_charge_state>dc_threshold or np.linalg.norm(dphi)>dphi_threshold) or newton_iter_num==0:
+    ):  # (np.linalg.norm(dc)/mat_props.c_max/ini_charge_state>dc_threshold or np.linalg.norm(dphi)>dphi_threshold) or newton_iter_num==0:
 
         def_initial = time()
 
         newton_iter_num = newton_iter_num + 1
 
-        Dx, dDx_dx = Dn_complex(shape_func @ (c_n1 / c_max), D_damage)
+        Dx, dDx_dx = Dn_complex(shape_func @ (c_n1 / mat_props.c_max), D_damage)
 
-        dDx_dc = dDx_dx / c_max  # diffucivity and dD/dc, size=(n_nodes*n_nodes, 1)
+        dDx_dc = (
+            dDx_dx / mat_props.c_max
+        )  # diffucivity and dD/dc, size=(n_nodes*n_nodes, 1)
 
-        Dy = Dx / Dx_div_Dy
-        dDy_dc = dDx_dc / Dx_div_Dy
+        Dy = Dx / mat_props.Dx_div_Dy
+        dDy_dc = dDx_dc / mat_props.Dx_div_Dy
 
-        j0, dj0_dx = i_0_complex(shape_func_b @ (c_n1 / c_max))
-        dj0_dc = dj0_dx / c_max
+        j0, dj0_dx = i_0_complex(shape_func_b @ (c_n1 / mat_props.c_max))
+        dj0_dc = dj0_dx / mat_props.c_max
 
-        E_eq, dE_eq_dx = ocp_complex(shape_func_b @ (c_n1 / c_max))
-        dE_eq_dc = dE_eq_dx / c_max
+        E_eq, dE_eq_dx = ocp_complex(shape_func_b @ (c_n1 / mat_props.c_max))
+        dE_eq_dc = dE_eq_dx / mat_props.c_max
 
         djbv_deta, djbv_dj0, j_BV = i_se(
-            shape_func_b @ phi_n1, j0, E_eq, Fday, R, Tk
+            shape_func_b @ phi_n1, j0, E_eq, mat_props.Fday, mat_props.R, mat_props.Tk
         )  # di/d\eta and dj/dj0 at cn and phi_n;
 
         #!!!! for all parameters denpend on cencentration or potential, if you want to investigate them at the gauss point, always calculate the concentration
@@ -1359,11 +1346,11 @@ for ii in range(nt):
             djbv_dj0,
             dj0_dc,
             j_BV,
-            j_applied,
+            mat_props.j_applied,
             x_G_b,
-            k_con,
+            mat_props.k_con,
             dt,
-            Fday,
+            mat_props.Fday,
             c_n,
             phi_n1,
         )
@@ -1405,7 +1392,7 @@ for ii in range(nt):
         print(
             "Number of Newton Iteration: " + str(newton_iter_num),
             "in Time Step: " + str(ii),
-            np.linalg.norm(dc) / (c_max * ini_charge_state),
+            np.linalg.norm(dc) / (mat_props.c_max * ini_charge_state),
             np.linalg.norm(dphi),
         )
 
@@ -1467,7 +1454,11 @@ for ii in range(nt):
     print("define mechanical stiffness matrix")
 
     C11, C12, C13, C22, C23, C33 = mechanical_C_tensor(
-        num_gauss_points_in_domain, D_damage, lambda_mechanical, mu, gauss_angle
+        num_gauss_points_in_domain,
+        D_damage,
+        mat_props.lambda_mechanical(),
+        mat_props.mu,
+        gauss_angle,
     )
 
     K_mechanical = mechanical_stiffness_matrix(
@@ -1477,7 +1468,7 @@ for ii in range(nt):
         C22,
         C23,
         C33,
-        E,
+        mat_props.E,
         x_nodes,
         num_gauss_points_in_domain,
         grad_shape_func_x_times_det_J_time_weight,
@@ -1512,12 +1503,12 @@ for ii in range(nt):
     )
 
     # compute Beta1
-    a_lattice, da_lattice_dx = alpha_lattice_complex(c_G_domain / c_max)
+    a_lattice, da_lattice_dx = alpha_lattice_complex(c_G_domain / mat_props.c_max)
     delta_a_lattice = a_lattice - a_lattice_ini
     delta_c = c_G_domain - c_ini
     beta_1 = delta_a_lattice / a_lattice_ini  # all of beta_1 and delta_c are np array
     # compute beta_2
-    c_lattice, dc_lattice_dx = c_lattice_complex(c_G_domain / c_max)
+    c_lattice, dc_lattice_dx = c_lattice_complex(c_G_domain / mat_props.c_max)
     delta_c_lattice = c_lattice - c_lattice_ini
     beta_2 = delta_c_lattice / c_lattice_ini  # all of beta_2 and delta_c are np array
 
@@ -1608,14 +1599,14 @@ for ii in range(nt):
 
     k = np.fmax(epsilon_e_eq, k)
 
-    D_damage[np.logical_and(k > k_i, k <= k_f)] = (
-        (k[np.logical_and(k > k_i, k <= k_f)] - k_i)
-        / (k_f - k_i)
-        * k_f
-        / k[np.logical_and(k > k_i, k <= k_f)]
+    D_damage[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)] = (
+        (k[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)] - mat_props.k_i)
+        / (mat_props.k_f - mat_props.k_i)
+        * mat_props.k_f
+        / k[np.logical_and(k > mat_props.k_i, k <= mat_props.k_f)]
     )
-    D_damage[k > k_f] = 1.0
-    D_damage[k <= k_i] = 0.0
+    D_damage[k > mat_props.k_f] = 1.0
+    D_damage[k <= mat_props.k_i] = 0.0
 
     #############################################################
     # calculate the damage factor on all nodes on interfaces
@@ -1639,12 +1630,14 @@ for ii in range(nt):
     )  # shear strain at nodes on interfaces, (grad_shape_func_x*uy+ grad_shape_func_y*ux) is an array
 
     c_int = np.dot(shape_func_int.toarray(), c_n)
-    a_lattice_int, da_lattice_dx_int = alpha_lattice_complex(c_int / c_max)
+    a_lattice_int, da_lattice_dx_int = alpha_lattice_complex(c_int / mat_props.c_max)
 
     c_ini_int = (
-        np.array(np.ones((num_interface_nodes, 1))) * c_max * ini_charge_state
+        np.array(np.ones((num_interface_nodes, 1))) * mat_props.c_max * ini_charge_state
     )  # initial concentration at all gauss points, shape:(num_gauss_points_in_domain,1)
-    a_lattice_ini_int, da_lattice_ini_int = alpha_lattice_complex(c_ini_int / c_max)
+    a_lattice_ini_int, da_lattice_ini_int = alpha_lattice_complex(
+        c_ini_int / mat_props.c_max
+    )
 
     delta_a_lattice_int = a_lattice_int - a_lattice_ini_int
     delta_c_int = c_int - c_ini_int
@@ -1653,8 +1646,10 @@ for ii in range(nt):
     )  # all of beta_1 and delta_c are np array
 
     # compute beta_2
-    c_lattice_int, dc_lattice_dx_int = c_lattice_complex(c_int / c_max)
-    c_lattice_ini_int, dc_lattice_dx_ini_int = c_lattice_complex(c_ini_int / c_max)
+    c_lattice_int, dc_lattice_dx_int = c_lattice_complex(c_int / mat_props.c_max)
+    c_lattice_ini_int, dc_lattice_dx_ini_int = c_lattice_complex(
+        c_ini_int / mat_props.c_max
+    )
 
     delta_c_lattice_int = c_lattice_int - c_lattice_ini_int
     beta_2_int = (
@@ -1685,14 +1680,17 @@ for ii in range(nt):
 
     k_int = np.fmax(epsilon_e_eq_int, k_int)
 
-    D_damage_int[np.logical_and(k_int > k_i, k_int <= k_f)] = (
-        (k_int[np.logical_and(k_int > k_i, k_int <= k_f)] - k_i)
-        / (k_f - k_i)
-        * k_f
-        / k_int[np.logical_and(k_int > k_i, k_int <= k_f)]
+    D_damage_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)] = (
+        (
+            k_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)]
+            - mat_props.k_i
+        )
+        / (mat_props.k_f - mat_props.k_i)
+        * mat_props.k_f
+        / k_int[np.logical_and(k_int > mat_props.k_i, k_int <= mat_props.k_f)]
     )
-    D_damage_int[k_int > k_f] = 1.0
-    D_damage_int[k_int <= k_i] = 0.0
+    D_damage_int[k_int > mat_props.k_f] = 1.0
+    D_damage_int[k_int <= mat_props.k_i] = 0.0
 
     if Node_removal == "True":
         # # for da_in in all_damaged_interface_nodes_id:
@@ -1735,7 +1733,11 @@ for ii in range(nt):
     # update the damge factor
 
     C11, C12, C13, C22, C23, C33 = mechanical_C_tensor(
-        num_gauss_points_in_domain, D_damage, lambda_mechanical, mu, gauss_angle
+        num_gauss_points_in_domain,
+        D_damage,
+        mat_props.lambda_mechanical(),
+        mat_props.mu,
+        gauss_angle,
     )
 
     sigma_x = (
