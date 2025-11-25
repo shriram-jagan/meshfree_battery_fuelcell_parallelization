@@ -3,6 +3,7 @@ from common import sparse as sp
 from common import spsolve, time, use_matplotlib
 from geometry_data import GeometryData, default_geometry
 from material_properties import MaterialProperties
+from simulation_config import SimulationConfig, default_config
 
 start_time = time()
 if use_matplotlib:
@@ -40,21 +41,27 @@ from shape_function_in_domain import compute_phi_M, shape_grad_shape_func
 
 print("Define domain and parameters")
 ###############################
-# Define domain
+# Configuration
 ###############################
-# Use geometry data from geometry_data.py
+# Load configurations from modules
 geom = default_geometry  # You can switch to single_grain_geometry if needed
+sim_config = default_config  # You can switch to other configs like fast_test_config
+mat_props = MaterialProperties()  # Material properties instance
+
+# Validate configuration
+sim_config.validate()
 
 ###############################
 # Define time step
 ###############################
-t = 1.0  # simulate for 10s
-nt = 2  # nt is the number of time steps
-dt = t / nt  # time step
+# Time configuration from sim_config
+t = sim_config.time.t
+nt = sim_config.time.nt
+dt = sim_config.time.dt
 
-IM_RKPM = "True"  # if it is interfacial modified RKPM
-
-Node_removal = "True"
+# Model configuration from sim_config
+IM_RKPM = sim_config.model.IM_RKPM
+Node_removal = sim_config.model.Node_removal
 
 ###############################
 # geometry
@@ -65,21 +72,15 @@ single_grain = geom.single_grain  # "True" or "False" as string
 angle = geom.angle
 n_boundaries = geom.n_boundaries
 
-###############################
-# Define material properties
-###############################
-mat_props = MaterialProperties()  # Instantiate the MaterialProperties class
-
 
 #######################################
 # differential method
 #######################################
 
-differential_method = "direct"  # 'implicite' or 'direct'    # specify which differential method to use, implicite: H1, H2, direct: directly differentiate
-# if the IM_RKPM=True, differential method must be set to be direct.
-
-integral_method = "gauss"
-damage_model = "ON"  # ON or OFF
+# Numerical and model configuration from sim_config
+differential_method = sim_config.numerical.differential_method
+integral_method = sim_config.numerical.integral_method
+damage_model = sim_config.model.damage_model
 
 if integral_method == "gauss":
     # Use Gauss integration points from geometry data
@@ -277,15 +278,12 @@ print(
 print("Compute shape function and its gradient in domain")
 
 
-HT0 = np.array([1, 0, 0], dtype=np.float64)  # transpose of the basis vector H
-HT1 = np.array(
-    [0, -1, 0], dtype=np.float64
-)  # for computation of gradient of shape function, d/dx
-HT2 = np.array(
-    [0, 0, -1], dtype=np.float64
-)  # for computation of gradient of shape function, d/dy
+# Basis vectors and numerical parameters from sim_config
+HT0 = sim_config.basis_vectors.HT0
+HT1 = sim_config.basis_vectors.HT1
+HT2 = sim_config.basis_vectors.HT2
 
-c = 2  # support size
+c = sim_config.numerical.c  # support size
 
 print(f"Number of nodes: {num_nodes}")
 
@@ -815,7 +813,8 @@ k_int = np.ones((num_interface_nodes, 1)) * mat_props.k_i
 # assemble the matrix for diffusion problem and solve all
 ########################################################################
 
-ini_charge_state = 0.92
+# Initial conditions from sim_config
+ini_charge_state = sim_config.initial_conditions.ini_charge_state
 
 c_ini = (
     np.array(np.ones((num_gauss_points_in_domain, 1)))
@@ -836,11 +835,14 @@ c_n = (
 )  # initial concentration at nodes
 x_n = c_n / mat_props.c_max  # inital x
 
-ini_potential = 3.712
+ini_potential = sim_config.initial_conditions.ini_potential
 phi_n = np.array(np.ones((num_nodes, 1))) * ini_potential  # initial potential
 
-dc_threshold = 1.0e-9
-dphi_threshold = 1.0e-9  # when the norm of dc and dphi smaller than the threshold, stop newton iteratio nand move to next time step
+# Convergence thresholds from sim_config
+dc_threshold = sim_config.convergence.dc_threshold
+dphi_threshold = (
+    sim_config.convergence.dphi_threshold
+)  # when the norm of dc and dphi smaller than the threshold, stop newton iteration and move to next time step
 
 dc = np.array(np.zeros((num_nodes, 1)))
 dphi = np.array(
@@ -1224,7 +1226,7 @@ for ii in range(nt):
             phi_n1[all_damaged_interface_nodes_id] = 0.0
 
     while (
-        newton_iter_num < 10
+        newton_iter_num < sim_config.convergence.max_newton_iter
     ):  # (np.linalg.norm(dc)/mat_props.c_max/ini_charge_state>dc_threshold or np.linalg.norm(dphi)>dphi_threshold) or newton_iter_num==0:
 
         def_initial = time()
