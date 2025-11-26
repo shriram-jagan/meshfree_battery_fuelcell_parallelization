@@ -258,16 +258,12 @@ def compute_phi_M_with_interface_method(
 # @jit  # Disabled due to Numba type inference issues
 def compute_phi_M_standard(
     x_G,
-    Gauss_grain_id,
     x_nodes,
     nodes_grain_id,
     a,
     M,
     M_P_x,
     M_P_y,
-    num_interface_segments,
-    interface_nodes,
-    BxByCxCy,
     M_P_z=None,
 ):
     """Compute phi_M using standard method (else case)."""
@@ -290,12 +286,13 @@ def compute_phi_M_standard(
     z_P_z = []
     phipz = []
 
+    H_scaling_factor = 1.0e-6
+    eps = 2.220446049250313e-16
+
     for i in range(np.shape(x_G)[0]):
         for j in range(np.shape(x_nodes)[0]):
 
             x_I = x_nodes[j]
-
-            H_scaling_factor = 1.0e-6
 
             if np.shape(M)[1] == 3:
                 z_ij = (
@@ -306,10 +303,10 @@ def compute_phi_M_standard(
                     ** 0.5
                 ) / a[j]
                 z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                    a[j] * z_ij * a[j] + eps
                 )  # partial z partial x, add the small number to force the term with machine accuracy
                 z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                    a[j] * z_ij * a[j] + eps
                 )  # partial z partial y
                 H_T = np.array(
                     [
@@ -336,13 +333,13 @@ def compute_phi_M_standard(
                     ** 0.5
                 ) / a[j]
                 z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                    a[j] * z_ij * a[j] + eps
                 )  # partial z partial x, add the small number to force the term with machine accuracy
                 z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                    a[j] * z_ij * a[j] + eps
                 )  # partial z partial y
                 z_ij_P_z = (x_G[i, 2] - x_nodes[j, 2]) / (
-                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                    a[j] * z_ij * a[j] + eps
                 )  # partial z partial y
                 H_T = np.array(
                     [
@@ -420,11 +417,6 @@ def compute_phi_M_standard(
                                 + H[ii] * HT_P_z[jj] * phi_ij
                             )
 
-    save_distance_function = np.array([1.0], dtype=np.float64)
-    save_distance_function_dx = np.array([1.0], dtype=np.float64)
-    save_distance_function_dy = np.array([1.0], dtype=np.float64)
-    save_point_D_coor = np.array([1.0], dtype=np.float64)
-
     return (
         phi_nonzero_index_row,
         phi_nonzero_index_column,
@@ -478,15 +470,11 @@ def compute_phi_M(
         # Use standard method
         return compute_phi_M_standard(
             x_G,
-            Gauss_grain_id,
             x_nodes,
-            nodes_grain_id,
             a,
             M,
             M_P_x,
             M_P_y,
-            num_interface_segments,
-            interface_nodes,
             BxByCxCy,
             M_P_z,
         )
