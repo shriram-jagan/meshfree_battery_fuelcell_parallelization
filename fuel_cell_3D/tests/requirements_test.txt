@@ -1,0 +1,18 @@
+# Testing dependencies for fuel_cell_3D
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0  # For parallel test execution
+pytest-mock>=3.10.0
+pytest-timeout>=2.1.0
+
+# Core dependencies (should match main requirements)
+numpy>=1.20.0
+scipy>=1.7.0
+numba>=0.56.0
+tifffile>=2022.0.0
+matplotlib>=3.5.0
+
+# Additional testing utilities
+coverage>=7.0.0
+pytest-benchmark>=4.0.0  # For performance testing
+hypothesis>=6.0.0  # For property-based testing
