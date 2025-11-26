@@ -145,59 +145,9 @@ def compute_phi_M(
             d_distance_dx = (x_G[i, 0] - x_coor_min_point_segment) / min_distance
             d_distance_dy = (x_G[i, 1] - y_coor_min_point_segment) / min_distance
 
-            # """
-            # discrete the segments to points, check distance between point to points
-            # """
-
-            # # dx_distance = ((x_G[i, :] - discreted_segments_points_coor)[:,0]**2+(x_G[i, :] - discreted_segments_points_coor)[:,1]**2)**0.5
-
-            # # matlab_interface_points_refined = np.loadtxt('matlab_interface_points_refined.txt')
-
-            # dx_distance = ((x_G[i, :] - discreted_segments_points_coor)[:,0]**2+(x_G[i, :] - discreted_segments_points_coor)[:,1]**2)**0.5
-            # # print(np.shape(dx_distance))
-            # # dx_distance = ((x_G[i, :] - matlab_interface_points_refined)[:,0]**2+(x_G[i, :] - matlab_interface_points_refined)[:,1]**2)**0.5
-
-            # # find the two index of smallest value
-            # firt_smallest_index = np.argmin(dx_distance)
-            # second_smallest_index = np.argpartition(dx_distance, 2)[1]
-
-            # # if firt_smallest_index == second_smallest_index:
-            # #     print('same!')
-            # #     np.savetxt('distance_array.txt', dx_distance)
-
-            # if abs(dx_distance[firt_smallest_index]-dx_distance[second_smallest_index])<1.0e-20:
-            #     if discreted_segments_points_coor[firt_smallest_index, 0] < discreted_segments_points_coor[second_smallest_index, 0]:
-
-            #         min_distance = dx_distance[firt_smallest_index]
-
-            #         min_index = firt_smallest_index
-            #     else:
-            #         min_distance = dx_distance[second_smallest_index]
-
-            #         min_index = second_smallest_index
-            # else:
-            #     min_distance = dx_distance[firt_smallest_index]
-
-            #     min_index = firt_smallest_index
-
-            # x_coor_min_point_segment = discreted_segments_points_coor[min_index, 0]
-
-            # y_coor_min_point_segment = discreted_segments_points_coor[min_index, 1]
-
-            # d_distance_dx = (x_G[i,0]-x_coor_min_point_segment)/min_distance
-            # d_distance_dy = (x_G[i,1]-y_coor_min_point_segment)/min_distance
-
-            # # x_coor_min_point_segment = matlab_interface_points_refined[min_index, 0]
-
-            # # y_coor_min_point_segment = matlab_interface_points_refined[min_index, 1]
-
-            # modify the kernal function related to nodes within domain
-
             heaviside_scaling_factor = 4.0e-7
 
             heaviside = np.tanh((min_distance + 1.0e-15) / heaviside_scaling_factor)
-
-            # heaviside = np.tanh((min_distance)/heaviside_scaling_factor)
 
             heaviside_P_x = (
                 d_distance_dx
@@ -211,9 +161,6 @@ def compute_phi_M(
                 * (1.0 / np.cosh((min_distance + 1.0e-15) / heaviside_scaling_factor))
                 ** 2
             )  # (1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
-
-            # heaviside_P_x = d_distance_dx/heaviside_scaling_factor*(1.0/np.cosh((min_distance)/heaviside_scaling_factor))**2#(1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
-            # heaviside_P_y = d_distance_dy/heaviside_scaling_factor*(1.0/np.cosh((min_distance)/heaviside_scaling_factor))**2#(1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
 
         for j in range(np.shape(x_nodes)[0]):
 
