@@ -6,9 +6,8 @@ import scipy.sparse as sp
 from numba import jit
 from numpy import sign
 from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
+from scipy.sparse import bmat, csr_array
 from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
 
 
 def mechanical_C_tensor_3d(
@@ -1338,7 +1337,7 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
     # EVector2 = (np.array(EVector[:,index_zero_EValue[1]]).reshape(2*np.shape(x_nodes)[0],1))
     # EVector3 = (np.array(EVector[:,index_zero_EValue[2]]).reshape(2*np.shape(x_nodes)[0],1))   # three eigenvectors corresponding to three zero eigenvalues
 
-    # K_mechanical = csc_matrix(K_mechanical+alpha*(np.dot(EVector1, EVector1.T)+np.dot(EVector2, EVector2.T)+np.dot(EVector3, EVector3.T)))
+    # K_mechanical = csr_array(K_mechanical+alpha*(np.dot(EVector1, EVector1.T)+np.dot(EVector2, EVector2.T)+np.dot(EVector3, EVector3.T)))
 
     return K_mechanical
 
