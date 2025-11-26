@@ -43,17 +43,6 @@ def compute_phi_M(
     z_P_z = []
     phipz = []
 
-    # # used for approximately calculating the distance, discrete interface segments into points and check distance between points to points
-    # segment_discrete_reso = 1000
-
-    # discreted_segments_points_coor = np.zeros((np.shape(BxByCxCy)[0]*(segment_discrete_reso+1),2))
-
-    # for i in range(np.shape(BxByCxCy)[0]):
-    #     discreted_segments_points_coor[i*(segment_discrete_reso+1):(i+1)*(segment_discrete_reso+1), 0] \
-    #     = np.linspace(BxByCxCy[i, 0], BxByCxCy[i, 2], num=segment_discrete_reso+1)
-
-    #     discreted_segments_points_coor[i*(segment_discrete_reso+1):(i+1)*(segment_discrete_reso+1), 1] \
-    #     = np.linspace(BxByCxCy[i, 1], BxByCxCy[i, 3], num=segment_discrete_reso+1)
     if single_grain == "False" and IM_RKPM == "True":
         print("get in")
         for i in range(np.shape(x_G)[0]):
