@@ -3,16 +3,14 @@ import time
 start_time = time.time()
 from collections import Counter
 
-import matplotlib.pyplot as plt
 import numba
 import numpy as np
 from numba import jit, njit
 from numba.typed import List
 from numpy import sign
 from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csc_matrix, csr_matrix
+from scipy.sparse import bmat, csr_array
 from scipy.sparse.linalg import eigs, spsolve
-from tqdm import tqdm
 
 
 def get_x_nodes_fuel_cell_3d_toy_image(
