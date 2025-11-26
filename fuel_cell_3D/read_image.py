@@ -3,7 +3,6 @@ import time
 start_time = time.time()
 from collections import Counter
 
-import matplotlib.pyplot as plt
 import numpy as np
 import tifffile
 from numba import jit

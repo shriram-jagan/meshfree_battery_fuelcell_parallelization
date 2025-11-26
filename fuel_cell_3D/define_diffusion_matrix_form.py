@@ -1,7 +1,6 @@
 import time
 
 start_time = time.time()
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.sparse as sp
 from numba import jit

@@ -1,7 +1,6 @@
 import time
 
 start_time = time.time()
-import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 from numpy import sign

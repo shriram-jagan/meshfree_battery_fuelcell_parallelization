@@ -2,8 +2,11 @@ import time
 
 start_time = time.time()
 import config
-import matplotlib.pyplot as plt
 import numpy as np
+
+# Only import matplotlib if plotting is enabled
+if config.ENABLE_PLOTTING:
+    import matplotlib.pyplot as plt
 import scipy.sparse as sp
 from define_diffusion_matrix_form import (
     diffusion_matrix_fuel_cell,
@@ -4171,135 +4174,149 @@ if studied_physics == "fuel cell":
         C_on_GP_save_pore[:, :3] = x_G_pore
         C_on_GP_save_pore[:, 3] = shape_func_pore * C_new_pore
 
-        fig1 = plt.figure()
-        ax = fig1.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            potential_on_nodes_save_electrolyte[:, 0],
-            potential_on_nodes_save_electrolyte[:, 1],
-            potential_on_nodes_save_electrolyte[:, 2],
-            c=potential_on_nodes_save_electrolyte[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Potential on Nodes - Electrolyte")
+        # Plotting is controlled by the config flag
+        if config.ENABLE_PLOTTING:
+            fig1 = plt.figure()
+            ax = fig1.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                potential_on_nodes_save_electrolyte[:, 0],
+                potential_on_nodes_save_electrolyte[:, 1],
+                potential_on_nodes_save_electrolyte[:, 2],
+                c=potential_on_nodes_save_electrolyte[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Potential on Nodes - Electrolyte")
 
-        fig2 = plt.figure()
-        ax = fig2.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            C_on_nodes_save_electrode[:, 0],
-            C_on_nodes_save_electrode[:, 1],
-            C_on_nodes_save_electrode[:, 2],
-            c=C_on_nodes_save_electrode[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Concentration on Nodes - Electrode")
+            fig2 = plt.figure()
+            ax = fig2.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                C_on_nodes_save_electrode[:, 0],
+                C_on_nodes_save_electrode[:, 1],
+                C_on_nodes_save_electrode[:, 2],
+                c=C_on_nodes_save_electrode[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Concentration on Nodes - Electrode")
 
-        fig3 = plt.figure()
-        ax = fig3.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            C_on_nodes_save_pore[:, 0],
-            C_on_nodes_save_pore[:, 1],
-            C_on_nodes_save_pore[:, 2],
-            c=C_on_nodes_save_pore[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Concentration on Nodes - Pore")
+            fig3 = plt.figure()
+            ax = fig3.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                C_on_nodes_save_pore[:, 0],
+                C_on_nodes_save_pore[:, 1],
+                C_on_nodes_save_pore[:, 2],
+                c=C_on_nodes_save_pore[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Concentration on Nodes - Pore")
 
-        fig4 = plt.figure()
-        ax = fig4.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            potential_on_GP_save_electrolyte[:, 0],
-            potential_on_GP_save_electrolyte[:, 1],
-            potential_on_GP_save_electrolyte[:, 2],
-            c=potential_on_GP_save_electrolyte[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Potential on GP - Electrolyte")
+            fig4 = plt.figure()
+            ax = fig4.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                potential_on_GP_save_electrolyte[:, 0],
+                potential_on_GP_save_electrolyte[:, 1],
+                potential_on_GP_save_electrolyte[:, 2],
+                c=potential_on_GP_save_electrolyte[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Potential on GP - Electrolyte")
 
-        fig5 = plt.figure()
-        ax = fig5.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            C_on_GP_save_electrode[:, 0],
-            C_on_GP_save_electrode[:, 1],
-            C_on_GP_save_electrode[:, 2],
-            c=C_on_GP_save_electrode[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Concentration on GP - Electrode")
+            fig5 = plt.figure()
+            ax = fig5.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                C_on_GP_save_electrode[:, 0],
+                C_on_GP_save_electrode[:, 1],
+                C_on_GP_save_electrode[:, 2],
+                c=C_on_GP_save_electrode[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Concentration on GP - Electrode")
 
-        fig6 = plt.figure()
-        ax = fig6.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            C_on_GP_save_pore[:, 0],
-            C_on_GP_save_pore[:, 1],
-            C_on_GP_save_pore[:, 2],
-            c=C_on_GP_save_pore[:, 3],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Concentration on GP - Pore")
+            fig6 = plt.figure()
+            ax = fig6.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                C_on_GP_save_pore[:, 0],
+                C_on_GP_save_pore[:, 1],
+                C_on_GP_save_pore[:, 2],
+                c=C_on_GP_save_pore[:, 3],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Concentration on GP - Pore")
 
-        fig7 = plt.figure()
-        ax = fig7.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_mechanical[:, 0], x_G_mechanical[:, 1], x_G_mechanical[:, 2], c=ux_gauss
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement ux")
+            fig7 = plt.figure()
+            ax = fig7.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_mechanical[:, 0],
+                x_G_mechanical[:, 1],
+                x_G_mechanical[:, 2],
+                c=ux_gauss,
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement ux")
 
-        fig8 = plt.figure()
-        ax = fig8.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_mechanical[:, 0], x_G_mechanical[:, 1], x_G_mechanical[:, 2], c=uy_gauss
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement uy")
+            fig8 = plt.figure()
+            ax = fig8.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_mechanical[:, 0],
+                x_G_mechanical[:, 1],
+                x_G_mechanical[:, 2],
+                c=uy_gauss,
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement uy")
 
-        fig9 = plt.figure()
-        ax = fig9.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_mechanical[:, 0], x_G_mechanical[:, 1], x_G_mechanical[:, 2], c=uz_gauss
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement uz")
+            fig9 = plt.figure()
+            ax = fig9.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_mechanical[:, 0],
+                x_G_mechanical[:, 1],
+                x_G_mechanical[:, 2],
+                c=uz_gauss,
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement uz")
 
-        fig10 = plt.figure()
-        ax = fig10.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_electrode[:, 0],
-            x_G_electrode[:, 1],
-            x_G_electrode[:, 2],
-            c=ux_gauss[num_gauss_points_in_domain_electrolyte:],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement ux")
+            fig10 = plt.figure()
+            ax = fig10.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_electrode[:, 0],
+                x_G_electrode[:, 1],
+                x_G_electrode[:, 2],
+                c=ux_gauss[num_gauss_points_in_domain_electrolyte:],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement ux")
 
-        fig11 = plt.figure()
-        ax = fig11.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_electrode[:, 0],
-            x_G_electrode[:, 1],
-            x_G_electrode[:, 2],
-            c=uy_gauss[num_gauss_points_in_domain_electrolyte:],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement uy")
+            fig11 = plt.figure()
+            ax = fig11.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_electrode[:, 0],
+                x_G_electrode[:, 1],
+                x_G_electrode[:, 2],
+                c=uy_gauss[num_gauss_points_in_domain_electrolyte:],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement uy")
 
-        fig12 = plt.figure()
-        ax = fig12.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_electrode[:, 0],
-            x_G_electrode[:, 1],
-            x_G_electrode[:, 2],
-            c=uz_gauss[num_gauss_points_in_domain_electrolyte:],
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Displacement uz")
+            fig12 = plt.figure()
+            ax = fig12.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_electrode[:, 0],
+                x_G_electrode[:, 1],
+                x_G_electrode[:, 2],
+                c=uz_gauss[num_gauss_points_in_domain_electrolyte:],
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Displacement uz")
 
-        fig13 = plt.figure()
-        ax = fig13.add_subplot(111, projection="3d")
-        sc = ax.scatter(
-            x_G_mechanical[:, 0], x_G_mechanical[:, 1], x_G_mechanical[:, 2], c=D_damage
-        )
-        plt.colorbar(sc, ax=ax)
-        plt.title("Damage Factor")
+            fig13 = plt.figure()
+            ax = fig13.add_subplot(111, projection="3d")
+            sc = ax.scatter(
+                x_G_mechanical[:, 0],
+                x_G_mechanical[:, 1],
+                x_G_mechanical[:, 2],
+                c=D_damage,
+            )
+            plt.colorbar(sc, ax=ax)
+            plt.title("Damage Factor")
 
-        plt.show()
+            plt.show()
