@@ -101,15 +101,10 @@ def compute_phi_M(
                     ((BA[zero_index, 0]) ** 2 + (BA[zero_index, 1]) ** 2) ** 0.5,
                 )
 
-            # sorted_dx_distance = np.sort(dx_distance)
-            # if sorted_dx_distance[0] == sorted_dx_distance[1]:
-            #     print('there is identicle minimum distance', sorted_dx_distance[0], sorted_dx_distance[1])
-
             min_distance = np.min(dx_distance)
 
             min_index = np.argmin(dx_distance)
 
-            # H(d(x)), d(x) = ((x-x0)**2+(y-y0)**2)**0.5, need to find x0, y0
             if (
                 min_index in positive_index
             ):  # if the smallest distance is between AD, D in between BC
