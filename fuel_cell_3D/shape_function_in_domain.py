@@ -9,8 +9,8 @@ from scipy.sparse import bmat, csr_array
 from scipy.sparse.linalg import eigs, spsolve
 
 
-@jit
-def compute_phi_M(
+# @jit  # Disabled due to Numba type inference issues with empty lists
+def compute_phi_M_with_interface_method(
     x_G,
     Gauss_grain_id,
     x_nodes,
@@ -22,10 +22,9 @@ def compute_phi_M(
     num_interface_segments,
     interface_nodes,
     BxByCxCy,
-    IM_RKPM,
-    single_grain,
     M_P_z=None,
 ):
+    """Compute phi_M using interface method (IM_RKPM=True and single_grain=False)."""
 
     if M_P_z is None:
         # Initialize with zeros or correct shape
@@ -43,349 +42,202 @@ def compute_phi_M(
     z_P_z = []
     phipz = []
 
-    if single_grain == "False" and IM_RKPM == "True":
-        print("get in")
-        for i in range(np.shape(x_G)[0]):
-            """
-            check the distance between point and segments, exact distance
-            """
-            dx_distance = np.zeros(num_interface_segments)
+    print("get in")
+    for i in range(np.shape(x_G)[0]):
+        """
+        check the distance between point and segments, exact distance
+        """
+        dx_distance = np.zeros(num_interface_segments)
 
-            # if x_nodes[j,:] not in interface_nodes:
-            # find the minimum distance of gauss point to interface
-            # if gauss point is A, boundary segment is BC, if (BA dot BC) times (CA dot CB) is negative, it means the vertical line from A to segment BC intersect BC on its extension,
-            # in this case, the distance from A to BC is min(|AB|, |AC|)
-            # if (BA dot BC) times (CA dot CB) is positive, there is a point D with BC that AD is normal to BC. the distance from A to BC is |BA vector - [vector BA dot (BC vector divided by |BC|) times (BC vector divided by |BC|) ]|
-            BA = x_G[i, :] - BxByCxCy[:, :2]
-            BC = BxByCxCy[:, 2:4] - BxByCxCy[:, :2]
-            CB = -BxByCxCy[:, 2:4] + BxByCxCy[:, :2]
-            CA = x_G[i, :] - BxByCxCy[:, 2:4]
+        # if x_nodes[j,:] not in interface_nodes:
+        # find the minimum distance of gauss point to interface
+        # if gauss point is A, boundary segment is BC, if (BA dot BC) times (CA dot CB) is negative, it means the vertical line from A to segment BC intersect BC on its extension,
+        # in this case, the distance from A to BC is min(|AB|, |AC|)
+        # if (BA dot BC) times (CA dot CB) is positive, there is a point D with BC that AD is normal to BC. the distance from A to BC is |BA vector - [vector BA dot (BC vector divided by |BC|) times (BC vector divided by |BC|) ]|
+        BA = x_G[i, :] - BxByCxCy[:, :2]
+        BC = BxByCxCy[:, 2:4] - BxByCxCy[:, :2]
+        CB = -BxByCxCy[:, 2:4] + BxByCxCy[:, :2]
+        CA = x_G[i, :] - BxByCxCy[:, 2:4]
 
-            BA_dot_BC = BA[:, 0] * BC[:, 0] + BA[:, 1] * BC[:, 1]
-            CA_dot_CB = CA[:, 0] * CB[:, 0] + CA[:, 1] * CB[:, 1]
+        BA_dot_BC = BA[:, 0] * BC[:, 0] + BA[:, 1] * BC[:, 1]
+        CA_dot_CB = CA[:, 0] * CB[:, 0] + CA[:, 1] * CB[:, 1]
 
-            sign_extension = BA_dot_BC * CA_dot_CB
+        sign_extension = BA_dot_BC * CA_dot_CB
 
-            positive_index = np.where(sign_extension > 0)[0]
-            negative_index = np.where(sign_extension < 0)[0]
-            zero_index = np.where(sign_extension == 0)[0]
+        positive_index = np.where(sign_extension > 0)[0]
+        negative_index = np.where(sign_extension < 0)[0]
+        zero_index = np.where(sign_extension == 0)[0]
 
-            BA_dot_unit_BC = BA_dot_BC / (((BC[:, 0]) ** 2 + (BC[:, 1]) ** 2) ** 0.5)
+        BA_dot_unit_BC = BA_dot_BC / (((BC[:, 0]) ** 2 + (BC[:, 1]) ** 2) ** 0.5)
 
-            BA_dot_unit_BC_times_unit_BC = (
-                BC
-                / (((BC[:, 0]) ** 2 + (BC[:, 1]) ** 2) ** 0.5)[:, None]
-                * BA_dot_unit_BC[:, None]
+        BA_dot_unit_BC_times_unit_BC = (
+            BC
+            / (((BC[:, 0]) ** 2 + (BC[:, 1]) ** 2) ** 0.5)[:, None]
+            * BA_dot_unit_BC[:, None]
+        )
+
+        dx_distance[positive_index] = (
+            (BA[positive_index, 0] - BA_dot_unit_BC_times_unit_BC[positive_index, 0])
+            ** 2
+            + (BA[positive_index, 1] - BA_dot_unit_BC_times_unit_BC[positive_index, 1])
+            ** 2
+        ) ** 0.5
+        dx_distance[negative_index] = np.minimum(
+            ((CA[negative_index, 0]) ** 2 + (CA[negative_index, 1]) ** 2) ** 0.5,
+            ((BA[negative_index, 0]) ** 2 + (BA[negative_index, 1]) ** 2) ** 0.5,
+        )
+
+        if np.shape(zero_index)[0] != 0:
+            dx_distance[zero_index] = np.minimum(
+                ((CA[zero_index, 0]) ** 2 + (CA[zero_index, 1]) ** 2) ** 0.5,
+                ((BA[zero_index, 0]) ** 2 + (BA[zero_index, 1]) ** 2) ** 0.5,
             )
 
-            dx_distance[positive_index] = (
-                (
-                    BA[positive_index, 0]
-                    - BA_dot_unit_BC_times_unit_BC[positive_index, 0]
-                )
-                ** 2
-                + (
-                    BA[positive_index, 1]
-                    - BA_dot_unit_BC_times_unit_BC[positive_index, 1]
-                )
-                ** 2
-            ) ** 0.5
-            dx_distance[negative_index] = np.minimum(
-                ((CA[negative_index, 0]) ** 2 + (CA[negative_index, 1]) ** 2) ** 0.5,
-                ((BA[negative_index, 0]) ** 2 + (BA[negative_index, 1]) ** 2) ** 0.5,
+        min_distance = np.min(dx_distance)
+
+        min_index = np.argmin(dx_distance)
+
+        if (
+            min_index in positive_index
+        ):  # if the smallest distance is between AD, D in between BC
+            x_coor_min_point_segment = (
+                BA_dot_unit_BC_times_unit_BC[min_index, 0] + BxByCxCy[min_index, 0]
             )
-
-            if np.shape(zero_index)[0] != 0:
-                dx_distance[zero_index] = np.minimum(
-                    ((CA[zero_index, 0]) ** 2 + (CA[zero_index, 1]) ** 2) ** 0.5,
-                    ((BA[zero_index, 0]) ** 2 + (BA[zero_index, 1]) ** 2) ** 0.5,
-                )
-
-            min_distance = np.min(dx_distance)
-
-            min_index = np.argmin(dx_distance)
-
-            if (
-                min_index in positive_index
-            ):  # if the smallest distance is between AD, D in between BC
-                x_coor_min_point_segment = (
-                    BA_dot_unit_BC_times_unit_BC[min_index, 0] + BxByCxCy[min_index, 0]
-                )
-                y_coor_min_point_segment = (
-                    BA_dot_unit_BC_times_unit_BC[min_index, 1] + BxByCxCy[min_index, 1]
-                )
-            if (min_index in negative_index) or (
-                min_index in zero_index
-            ):  # if the smallest distance is AB or AC
-                if ((CA[min_index, 0]) ** 2 + (CA[min_index, 1]) ** 2) ** 0.5 < (
-                    (BA[min_index, 0]) ** 2 + (BA[min_index, 1]) ** 2
-                ) ** 0.5:
-                    x_coor_min_point_segment = BxByCxCy[min_index, 2]
-                    y_coor_min_point_segment = BxByCxCy[min_index, 3]
-                else:
-                    x_coor_min_point_segment = BxByCxCy[min_index, 0]
-                    y_coor_min_point_segment = BxByCxCy[min_index, 1]
-
-            d_distance_dx = (x_G[i, 0] - x_coor_min_point_segment) / min_distance
-            d_distance_dy = (x_G[i, 1] - y_coor_min_point_segment) / min_distance
-
-            heaviside_scaling_factor = 4.0e-7
-
-            heaviside = np.tanh((min_distance + 1.0e-15) / heaviside_scaling_factor)
-
-            heaviside_P_x = (
-                d_distance_dx
-                / heaviside_scaling_factor
-                * (1.0 / np.cosh((min_distance + 1.0e-15) / heaviside_scaling_factor))
-                ** 2
-            )  # (1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
-            heaviside_P_y = (
-                d_distance_dy
-                / heaviside_scaling_factor
-                * (1.0 / np.cosh((min_distance + 1.0e-15) / heaviside_scaling_factor))
-                ** 2
-            )  # (1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
-
-        for j in range(np.shape(x_nodes)[0]):
-
-            z_ij = (
-                ((x_G[i, 0] - x_nodes[j, 0]) ** 2 + (x_G[i, 1] - x_nodes[j, 1]) ** 2)
-                ** 0.5
-            ) / a[j]
-            z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                a[j] * z_ij * a[j] + 2.220446049250313e-16
-            )  # partial z partial x, add the small number to force the term with machine accuracy
-            z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                a[j] * z_ij * a[j] + 2.220446049250313e-16
-            )  # partial z partial y
-
-            x_I = x_nodes[j]
-
-            H_sacling_factor = 1.0e-6
-
-            H_T = np.array(
-                [
-                    1,
-                    (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                    (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                ],
-                dtype=np.float64,
+            y_coor_min_point_segment = (
+                BA_dot_unit_BC_times_unit_BC[min_index, 1] + BxByCxCy[min_index, 1]
             )
-            H = np.transpose(H_T)
-
-            HT_P_x = (
-                np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
-            )  # partial H partial x
-            HT_P_y = (
-                np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
-            )  # partial H partial y
-
-            H_P_x = np.transpose(HT_P_x)
-            H_P_y = np.transpose(HT_P_y)
-
-            if z_ij >= 0 and z_ij < 0.5:
-
-                phi_ij = 2.0 / 3 - 4 * z_ij**2 + 4 * z_ij**3
-                phi_P_z = -8.0 * z_ij + 12.0 * z_ij**2  # partial phi partial z
+        if (min_index in negative_index) or (
+            min_index in zero_index
+        ):  # if the smallest distance is AB or AC
+            if ((CA[min_index, 0]) ** 2 + (CA[min_index, 1]) ** 2) ** 0.5 < (
+                (BA[min_index, 0]) ** 2 + (BA[min_index, 1]) ** 2
+            ) ** 0.5:
+                x_coor_min_point_segment = BxByCxCy[min_index, 2]
+                y_coor_min_point_segment = BxByCxCy[min_index, 3]
             else:
-                if z_ij <= 1 and z_ij >= 0.5:
-                    phi_ij = 4.0 / 3 - 4 * z_ij + 4 * z_ij**2 - 4.0 / 3 * z_ij**3
-                    phi_P_z = -4 + 8 * z_ij - 4 * z_ij**2
+                x_coor_min_point_segment = BxByCxCy[min_index, 0]
+                y_coor_min_point_segment = BxByCxCy[min_index, 1]
 
-            if z_ij >= 0 and z_ij <= 1.0:
-                # print('yes')
-                # phi_nonzerovalue_data.append(phi_ij)
+        d_distance_dx = (x_G[i, 0] - x_coor_min_point_segment) / min_distance
+        d_distance_dy = (x_G[i, 1] - y_coor_min_point_segment) / min_distance
 
-                node_not_on_interface = "True"
+        heaviside_scaling_factor = 4.0e-7
 
-                for i_nodes in range(num_interface_segments * 2):
-                    # print('yyy')
-                    if (
-                        abs(x_nodes[j, 0] - interface_nodes[i_nodes, 0]) < 1e-10
-                        and abs(x_nodes[j, 1] - interface_nodes[i_nodes, 1]) < 1e-10
-                    ):
-                        node_not_on_interface = "False"
+        heaviside = np.tanh((min_distance + 1.0e-15) / heaviside_scaling_factor)
 
-                if node_not_on_interface == "True":
-                    if nodes_grain_id[j] == Gauss_grain_id[i]:
+        heaviside_P_x = (
+            d_distance_dx
+            / heaviside_scaling_factor
+            * (1.0 / np.cosh((min_distance + 1.0e-15) / heaviside_scaling_factor)) ** 2
+        )  # (1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
+        heaviside_P_y = (
+            d_distance_dy
+            / heaviside_scaling_factor
+            * (1.0 / np.cosh((min_distance + 1.0e-15) / heaviside_scaling_factor)) ** 2
+        )  # (1-(np.tanh((min_distance+1.0e-15)/heaviside_scaling_factor))**2)
 
-                        phi_nonzero_index_row.append(i)
-                        phi_nonzero_index_column.append(j)
-                        phi_nonzerovalue_data.append(phi_ij * heaviside)
+    for j in range(np.shape(x_nodes)[0]):
 
-                        phi_P_x_ij = phi_P_z * z_ij_P_x
-                        phi_P_y_ij = phi_P_z * z_ij_P_y
-                        phi_P_x_nonzerovalue_data.append(
-                            phi_P_x_ij * heaviside + phi_ij * heaviside_P_x
-                        )  # partial phi partial x
-                        phi_P_y_nonzerovalue_data.append(
-                            phi_P_y_ij * heaviside + phi_ij * heaviside_P_y
-                        )  # partial phi partial y
+        z_ij = (
+            ((x_G[i, 0] - x_nodes[j, 0]) ** 2 + (x_G[i, 1] - x_nodes[j, 1]) ** 2) ** 0.5
+        ) / a[j]
+        z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
+            a[j] * z_ij * a[j] + 2.220446049250313e-16
+        )  # partial z partial x, add the small number to force the term with machine accuracy
+        z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
+            a[j] * z_ij * a[j] + 2.220446049250313e-16
+        )  # partial z partial y
 
-                        z.append(z_ij)
-                        z_P_x.append(z_ij_P_x)
-                        z_P_y.append(z_ij_P_y)
-                        phipz.append(phi_P_z)
-                        for ii in range(3):
-                            for jj in range(3):
-                                M[i][ii][jj] = (
-                                    M[i][ii][jj] + H[ii] * H_T[jj] * phi_ij * heaviside
-                                )
-                                M_P_x[i][ii][jj] = (
-                                    M_P_x[i][ii][jj]
-                                    + H[ii]
-                                    * H_T[jj]
-                                    * (phi_P_x_ij * heaviside + phi_ij * heaviside_P_x)
-                                    + H_P_x[ii] * H_T[jj] * phi_ij * heaviside
-                                    + H[ii] * HT_P_x[jj] * phi_ij * heaviside
-                                )
-                                M_P_y[i][ii][jj] = (
-                                    M_P_y[i][ii][jj]
-                                    + H[ii]
-                                    * H_T[jj]
-                                    * (phi_P_y_ij * heaviside + phi_ij * heaviside_P_y)
-                                    + H_P_y[ii] * H_T[jj] * phi_ij * heaviside
-                                    + H[ii] * HT_P_y[jj] * phi_ij * heaviside
-                                )
+        x_I = x_nodes[j]
 
-    else:
-        for i in range(np.shape(x_G)[0]):
-            for j in range(np.shape(x_nodes)[0]):
+        H_sacling_factor = 1.0e-6
 
-                x_I = x_nodes[j]
+        H_T = np.array(
+            [
+                1,
+                (x_G[i][0] - x_I[0]) / H_sacling_factor,
+                (x_G[i][1] - x_I[1]) / H_sacling_factor,
+            ],
+            dtype=np.float64,
+        )
+        H = np.transpose(H_T)
 
-                H_sacling_factor = 1.0e-6
+        HT_P_x = (
+            np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
+        )  # partial H partial x
+        HT_P_y = (
+            np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
+        )  # partial H partial y
 
-                if np.shape(M)[1] == 3:
-                    z_ij = (
-                        (
-                            (x_G[i, 0] - x_nodes[j, 0]) ** 2
-                            + (x_G[i, 1] - x_nodes[j, 1]) ** 2
-                        )
-                        ** 0.5
-                    ) / a[j]
-                    z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                        a[j] * z_ij * a[j] + 2.220446049250313e-16
-                    )  # partial z partial x, add the small number to force the term with machine accuracy
-                    z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                        a[j] * z_ij * a[j] + 2.220446049250313e-16
-                    )  # partial z partial y
-                    H_T = np.array(
-                        [
-                            1,
-                            (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                            (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                        ],
-                        dtype=np.float64,
-                    )
-                    HT_P_x = (
-                        np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
-                    )  # partial H partial x
-                    HT_P_y = (
-                        np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
-                    )  # partial H partial y
-                if np.shape(M)[1] == 4:
-                    z_ij = (
-                        (
-                            (x_G[i, 0] - x_nodes[j, 0]) ** 2
-                            + (x_G[i, 1] - x_nodes[j, 1]) ** 2
-                            + (x_G[i, 2] - x_nodes[j, 2]) ** 2
-                        )
-                        ** 0.5
-                    ) / a[j]
-                    z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                        a[j] * z_ij * a[j] + 2.220446049250313e-16
-                    )  # partial z partial x, add the small number to force the term with machine accuracy
-                    z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                        a[j] * z_ij * a[j] + 2.220446049250313e-16
-                    )  # partial z partial y
-                    z_ij_P_z = (x_G[i, 2] - x_nodes[j, 2]) / (
-                        a[j] * z_ij * a[j] + 2.220446049250313e-16
-                    )  # partial z partial y
-                    H_T = np.array(
-                        [
-                            1,
-                            (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                            (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                            (x_G[i][2] - x_I[2]) / H_sacling_factor,
-                        ],
-                        dtype=np.float64,
-                    )
-                    HT_P_x = (
-                        np.array([0, 1, 0, 0], dtype=np.float64) / H_sacling_factor
-                    )  # partial H partial x
-                    HT_P_y = (
-                        np.array([0, 0, 1, 0], dtype=np.float64) / H_sacling_factor
-                    )  # partial H partial y
-                    HT_P_z = (
-                        np.array([0, 0, 0, 1], dtype=np.float64) / H_sacling_factor
-                    )  # partial H partial z
-                    H_P_z = np.transpose(HT_P_z)
-                H = np.transpose(H_T)
-                H_P_x = np.transpose(HT_P_x)
-                H_P_y = np.transpose(HT_P_y)
+        H_P_x = np.transpose(HT_P_x)
+        H_P_y = np.transpose(HT_P_y)
 
-                if z_ij >= 0 and z_ij < 0.5:
+        if z_ij >= 0 and z_ij < 0.5:
 
-                    phi_ij = 2.0 / 3 - 4 * z_ij**2 + 4 * z_ij**3
-                    phi_P_z = -8.0 * z_ij + 12.0 * z_ij**2  # partial phi partial z
-                else:
-                    if z_ij <= 1 and z_ij >= 0.5:
-                        phi_ij = 4.0 / 3 - 4 * z_ij + 4 * z_ij**2 - 4.0 / 3 * z_ij**3
-                        phi_P_z = -4 + 8 * z_ij - 4 * z_ij**2
+            phi_ij = 2.0 / 3 - 4 * z_ij**2 + 4 * z_ij**3
+            phi_P_z = -8.0 * z_ij + 12.0 * z_ij**2  # partial phi partial z
+        else:
+            if z_ij <= 1 and z_ij >= 0.5:
+                phi_ij = 4.0 / 3 - 4 * z_ij + 4 * z_ij**2 - 4.0 / 3 * z_ij**3
+                phi_P_z = -4 + 8 * z_ij - 4 * z_ij**2
 
-                if z_ij >= 0 and z_ij <= 1.0:
+        if z_ij >= 0 and z_ij <= 1.0:
+            # print('yes')
+            # phi_nonzerovalue_data.append(phi_ij)
 
-                    phi_nonzerovalue_data.append(phi_ij)
+            node_not_on_interface = "True"
+
+            for i_nodes in range(num_interface_segments * 2):
+                # print('yyy')
+                if (
+                    abs(x_nodes[j, 0] - interface_nodes[i_nodes, 0]) < 1e-10
+                    and abs(x_nodes[j, 1] - interface_nodes[i_nodes, 1]) < 1e-10
+                ):
+                    node_not_on_interface = "False"
+
+            if node_not_on_interface == "True":
+                if nodes_grain_id[j] == Gauss_grain_id[i]:
+
                     phi_nonzero_index_row.append(i)
                     phi_nonzero_index_column.append(j)
+                    phi_nonzerovalue_data.append(phi_ij * heaviside)
+
                     phi_P_x_ij = phi_P_z * z_ij_P_x
                     phi_P_y_ij = phi_P_z * z_ij_P_y
-                    if np.shape(M)[1] == 4:
-                        phi_P_z_ij = phi_P_z * z_ij_P_z
-                        phi_P_z_nonzerovalue_data.append(phi_P_z_ij)
-                        z_P_z.append(z_ij_P_z)
-
                     phi_P_x_nonzerovalue_data.append(
-                        phi_P_x_ij
+                        phi_P_x_ij * heaviside + phi_ij * heaviside_P_x
                     )  # partial phi partial x
                     phi_P_y_nonzerovalue_data.append(
-                        phi_P_y_ij
+                        phi_P_y_ij * heaviside + phi_ij * heaviside_P_y
                     )  # partial phi partial y
+
                     z.append(z_ij)
                     z_P_x.append(z_ij_P_x)
                     z_P_y.append(z_ij_P_y)
                     phipz.append(phi_P_z)
-
-                    for ii in range(np.shape(M)[1]):
-                        for jj in range(np.shape(M)[1]):
-                            # if i==13:
-                            #     print(M[i])
-                            M[i][ii][jj] = M[i][ii][jj] + H[ii] * H_T[jj] * phi_ij
+                    # Note: For interface method with 2D (M shape is 3x3),
+                    # phi_P_z_nonzerovalue_data is not populated
+                    for ii in range(3):
+                        for jj in range(3):
+                            M[i][ii][jj] = (
+                                M[i][ii][jj] + H[ii] * H_T[jj] * phi_ij * heaviside
+                            )
                             M_P_x[i][ii][jj] = (
                                 M_P_x[i][ii][jj]
-                                + H[ii] * H_T[jj] * phi_P_x_ij
-                                + H_P_x[ii] * H_T[jj] * phi_ij
-                                + H[ii] * HT_P_x[jj] * phi_ij
+                                + H[ii]
+                                * H_T[jj]
+                                * (phi_P_x_ij * heaviside + phi_ij * heaviside_P_x)
+                                + H_P_x[ii] * H_T[jj] * phi_ij * heaviside
+                                + H[ii] * HT_P_x[jj] * phi_ij * heaviside
                             )
                             M_P_y[i][ii][jj] = (
                                 M_P_y[i][ii][jj]
-                                + H[ii] * H_T[jj] * phi_P_y_ij
-                                + H_P_y[ii] * H_T[jj] * phi_ij
-                                + H[ii] * HT_P_y[jj] * phi_ij
+                                + H[ii]
+                                * H_T[jj]
+                                * (phi_P_y_ij * heaviside + phi_ij * heaviside_P_y)
+                                + H_P_y[ii] * H_T[jj] * phi_ij * heaviside
+                                + H[ii] * HT_P_y[jj] * phi_ij * heaviside
                             )
-                            if np.shape(M)[1] == 4:
-                                M_P_z[i][ii][jj] = (
-                                    M_P_z[i][ii][jj]
-                                    + H[ii] * H_T[jj] * phi_P_z_ij
-                                    + H_P_z[ii] * H_T[jj] * phi_ij
-                                    + H[ii] * HT_P_z[jj] * phi_ij
-                                )
-
-        save_distance_function = np.array([1.0], dtype=np.float64)
-        save_distance_function_dx = np.array([1.0], dtype=np.float64)
-        save_distance_function_dy = np.array([1.0], dtype=np.float64)
-        save_point_D_coor = np.array([1.0], dtype=np.float64)
 
     return (
         phi_nonzero_index_row,
@@ -399,7 +251,240 @@ def compute_phi_M(
         M_P_y,
         M_P_z,
     )
-    # return save_point_D_coor, save_distance_function,save_distance_function_dx,save_distance_function_dy, phi_nonzero_index_row, phi_nonzero_index_column, phi_nonzerovalue_data,phi_P_x_nonzerovalue_data, phi_P_y_nonzerovalue_data, M, M_P_x, M_P_y
+
+
+# @jit  # Disabled due to Numba type inference issues
+def compute_phi_M_standard(
+    x_G,
+    Gauss_grain_id,
+    x_nodes,
+    nodes_grain_id,
+    a,
+    M,
+    M_P_x,
+    M_P_y,
+    num_interface_segments,
+    interface_nodes,
+    BxByCxCy,
+    M_P_z=None,
+):
+    """Compute phi_M using standard method (else case)."""
+
+    if M_P_z is None:
+        # Initialize with zeros or correct shape
+        M_P_z = np.zeros_like(M)  # Adjust shape accordingly
+
+    phi_nonzero_index_row = []
+    phi_nonzero_index_column = []
+    phi_nonzerovalue_data = []
+    phi_P_x_nonzerovalue_data = []
+    phi_P_y_nonzerovalue_data = []
+    phi_P_z_nonzerovalue_data = []
+    z = []
+    z_P_x = []
+    z_P_y = []
+    z_P_z = []
+    phipz = []
+
+    for i in range(np.shape(x_G)[0]):
+        for j in range(np.shape(x_nodes)[0]):
+
+            x_I = x_nodes[j]
+
+            H_sacling_factor = 1.0e-6
+
+            if np.shape(M)[1] == 3:
+                z_ij = (
+                    (
+                        (x_G[i, 0] - x_nodes[j, 0]) ** 2
+                        + (x_G[i, 1] - x_nodes[j, 1]) ** 2
+                    )
+                    ** 0.5
+                ) / a[j]
+                z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
+                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                )  # partial z partial x, add the small number to force the term with machine accuracy
+                z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
+                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                )  # partial z partial y
+                H_T = np.array(
+                    [
+                        1,
+                        (x_G[i][0] - x_I[0]) / H_sacling_factor,
+                        (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                    ],
+                    dtype=np.float64,
+                )
+                HT_P_x = (
+                    np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
+                )  # partial H partial x
+                HT_P_y = (
+                    np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
+                )  # partial H partial y
+            if np.shape(M)[1] == 4:
+                z_ij = (
+                    (
+                        (x_G[i, 0] - x_nodes[j, 0]) ** 2
+                        + (x_G[i, 1] - x_nodes[j, 1]) ** 2
+                        + (x_G[i, 2] - x_nodes[j, 2]) ** 2
+                    )
+                    ** 0.5
+                ) / a[j]
+                z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
+                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                )  # partial z partial x, add the small number to force the term with machine accuracy
+                z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
+                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                )  # partial z partial y
+                z_ij_P_z = (x_G[i, 2] - x_nodes[j, 2]) / (
+                    a[j] * z_ij * a[j] + 2.220446049250313e-16
+                )  # partial z partial y
+                H_T = np.array(
+                    [
+                        1,
+                        (x_G[i][0] - x_I[0]) / H_sacling_factor,
+                        (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                        (x_G[i][2] - x_I[2]) / H_sacling_factor,
+                    ],
+                    dtype=np.float64,
+                )
+                HT_P_x = (
+                    np.array([0, 1, 0, 0], dtype=np.float64) / H_sacling_factor
+                )  # partial H partial x
+                HT_P_y = (
+                    np.array([0, 0, 1, 0], dtype=np.float64) / H_sacling_factor
+                )  # partial H partial y
+                HT_P_z = (
+                    np.array([0, 0, 0, 1], dtype=np.float64) / H_sacling_factor
+                )  # partial H partial z
+                H_P_z = np.transpose(HT_P_z)
+            H = np.transpose(H_T)
+            H_P_x = np.transpose(HT_P_x)
+            H_P_y = np.transpose(HT_P_y)
+
+            if z_ij >= 0 and z_ij < 0.5:
+
+                phi_ij = 2.0 / 3 - 4 * z_ij**2 + 4 * z_ij**3
+                phi_P_z = -8.0 * z_ij + 12.0 * z_ij**2  # partial phi partial z
+            else:
+                if z_ij <= 1 and z_ij >= 0.5:
+                    phi_ij = 4.0 / 3 - 4 * z_ij + 4 * z_ij**2 - 4.0 / 3 * z_ij**3
+                    phi_P_z = -4 + 8 * z_ij - 4 * z_ij**2
+
+            if z_ij >= 0 and z_ij <= 1.0:
+
+                phi_nonzerovalue_data.append(phi_ij)
+                phi_nonzero_index_row.append(i)
+                phi_nonzero_index_column.append(j)
+                phi_P_x_ij = phi_P_z * z_ij_P_x
+                phi_P_y_ij = phi_P_z * z_ij_P_y
+                if np.shape(M)[1] == 4:
+                    phi_P_z_ij = phi_P_z * z_ij_P_z
+                    phi_P_z_nonzerovalue_data.append(phi_P_z_ij)
+                    z_P_z.append(z_ij_P_z)
+
+                phi_P_x_nonzerovalue_data.append(phi_P_x_ij)  # partial phi partial x
+                phi_P_y_nonzerovalue_data.append(phi_P_y_ij)  # partial phi partial y
+                z.append(z_ij)
+                z_P_x.append(z_ij_P_x)
+                z_P_y.append(z_ij_P_y)
+                phipz.append(phi_P_z)
+
+                for ii in range(np.shape(M)[1]):
+                    for jj in range(np.shape(M)[1]):
+                        # if i==13:
+                        #     print(M[i])
+                        M[i][ii][jj] = M[i][ii][jj] + H[ii] * H_T[jj] * phi_ij
+                        M_P_x[i][ii][jj] = (
+                            M_P_x[i][ii][jj]
+                            + H[ii] * H_T[jj] * phi_P_x_ij
+                            + H_P_x[ii] * H_T[jj] * phi_ij
+                            + H[ii] * HT_P_x[jj] * phi_ij
+                        )
+                        M_P_y[i][ii][jj] = (
+                            M_P_y[i][ii][jj]
+                            + H[ii] * H_T[jj] * phi_P_y_ij
+                            + H_P_y[ii] * H_T[jj] * phi_ij
+                            + H[ii] * HT_P_y[jj] * phi_ij
+                        )
+                        if np.shape(M)[1] == 4:
+                            M_P_z[i][ii][jj] = (
+                                M_P_z[i][ii][jj]
+                                + H[ii] * H_T[jj] * phi_P_z_ij
+                                + H_P_z[ii] * H_T[jj] * phi_ij
+                                + H[ii] * HT_P_z[jj] * phi_ij
+                            )
+
+    save_distance_function = np.array([1.0], dtype=np.float64)
+    save_distance_function_dx = np.array([1.0], dtype=np.float64)
+    save_distance_function_dy = np.array([1.0], dtype=np.float64)
+    save_point_D_coor = np.array([1.0], dtype=np.float64)
+
+    return (
+        phi_nonzero_index_row,
+        phi_nonzero_index_column,
+        phi_nonzerovalue_data,
+        phi_P_x_nonzerovalue_data,
+        phi_P_y_nonzerovalue_data,
+        phi_P_z_nonzerovalue_data,
+        M,
+        M_P_x,
+        M_P_y,
+        M_P_z,
+    )
+
+
+# @jit  # Not needed for wrapper function that just delegates
+def compute_phi_M(
+    x_G,
+    Gauss_grain_id,
+    x_nodes,
+    nodes_grain_id,
+    a,
+    M,
+    M_P_x,
+    M_P_y,
+    num_interface_segments,
+    interface_nodes,
+    BxByCxCy,
+    IM_RKPM,
+    single_grain,
+    M_P_z=None,
+):
+    """Main compute_phi_M function that delegates to specialized functions based on conditions."""
+
+    if single_grain == "False" and IM_RKPM == "True":
+        # Use interface method
+        return compute_phi_M_with_interface_method(
+            x_G,
+            Gauss_grain_id,
+            x_nodes,
+            nodes_grain_id,
+            a,
+            M,
+            M_P_x,
+            M_P_y,
+            num_interface_segments,
+            interface_nodes,
+            BxByCxCy,
+            M_P_z,
+        )
+    else:
+        # Use standard method
+        return compute_phi_M_standard(
+            x_G,
+            Gauss_grain_id,
+            x_nodes,
+            nodes_grain_id,
+            a,
+            M,
+            M_P_x,
+            M_P_y,
+            num_interface_segments,
+            interface_nodes,
+            BxByCxCy,
+            M_P_z,
+        )
 
 
 # @jit  # this is taking so long time, we are vectorizing this part
