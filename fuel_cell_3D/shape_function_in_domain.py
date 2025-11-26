@@ -26,6 +26,8 @@ def compute_phi_M_with_interface_method(
 ):
     """Compute phi_M using interface method (IM_RKPM=True and single_grain=False)."""
 
+    print(f"Compute phi_M using interface method")
+
     if M_P_z is None:
         # Initialize with zeros or correct shape
         M_P_z = np.zeros_like(M)  # Adjust shape accordingly
@@ -150,23 +152,23 @@ def compute_phi_M_with_interface_method(
 
         x_I = x_nodes[j]
 
-        H_sacling_factor = 1.0e-6
+        H_scaling_factor = 1.0e-6
 
         H_T = np.array(
             [
                 1,
-                (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                (x_G[i][1] - x_I[1]) / H_scaling_factor,
             ],
             dtype=np.float64,
         )
         H = np.transpose(H_T)
 
         HT_P_x = (
-            np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
+            np.array([0, 1, 0], dtype=np.float64) / H_scaling_factor
         )  # partial H partial x
         HT_P_y = (
-            np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
+            np.array([0, 0, 1], dtype=np.float64) / H_scaling_factor
         )  # partial H partial y
 
         H_P_x = np.transpose(HT_P_x)
@@ -270,6 +272,8 @@ def compute_phi_M_standard(
 ):
     """Compute phi_M using standard method (else case)."""
 
+    print(f"Compute phi_M using standard method")
+
     if M_P_z is None:
         # Initialize with zeros or correct shape
         M_P_z = np.zeros_like(M)  # Adjust shape accordingly
@@ -291,7 +295,7 @@ def compute_phi_M_standard(
 
             x_I = x_nodes[j]
 
-            H_sacling_factor = 1.0e-6
+            H_scaling_factor = 1.0e-6
 
             if np.shape(M)[1] == 3:
                 z_ij = (
@@ -310,17 +314,18 @@ def compute_phi_M_standard(
                 H_T = np.array(
                     [
                         1,
-                        (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                        (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                        (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                        (x_G[i][1] - x_I[1]) / H_scaling_factor,
                     ],
                     dtype=np.float64,
                 )
                 HT_P_x = (
-                    np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
+                    np.array([0, 1, 0], dtype=np.float64) / H_scaling_factor
                 )  # partial H partial x
                 HT_P_y = (
-                    np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
+                    np.array([0, 0, 1], dtype=np.float64) / H_scaling_factor
                 )  # partial H partial y
+
             if np.shape(M)[1] == 4:
                 z_ij = (
                     (
@@ -342,20 +347,20 @@ def compute_phi_M_standard(
                 H_T = np.array(
                     [
                         1,
-                        (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                        (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                        (x_G[i][2] - x_I[2]) / H_sacling_factor,
+                        (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                        (x_G[i][1] - x_I[1]) / H_scaling_factor,
+                        (x_G[i][2] - x_I[2]) / H_scaling_factor,
                     ],
                     dtype=np.float64,
                 )
                 HT_P_x = (
-                    np.array([0, 1, 0, 0], dtype=np.float64) / H_sacling_factor
+                    np.array([0, 1, 0, 0], dtype=np.float64) / H_scaling_factor
                 )  # partial H partial x
                 HT_P_y = (
-                    np.array([0, 0, 1, 0], dtype=np.float64) / H_sacling_factor
+                    np.array([0, 0, 1, 0], dtype=np.float64) / H_scaling_factor
                 )  # partial H partial y
                 HT_P_z = (
-                    np.array([0, 0, 0, 1], dtype=np.float64) / H_sacling_factor
+                    np.array([0, 0, 0, 1], dtype=np.float64) / H_scaling_factor
                 )  # partial H partial z
                 H_P_z = np.transpose(HT_P_z)
             H = np.transpose(H_T)
@@ -527,21 +532,21 @@ def shape_grad_shape_func(
         # compute the shape function and the gradient of shape function
         x_I = x_nodes[j]
 
-        H_sacling_factor = 1.0e-6
+        H_scaling_factor = 1.0e-6
         if np.shape(M)[1] == 3:
             H_T = np.array(
                 [
                     1,
-                    (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                    (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                    (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                    (x_G[i][1] - x_I[1]) / H_scaling_factor,
                 ],
                 dtype=np.float64,
             )
             HT_P_x = (
-                np.array([0, 1, 0], dtype=np.float64) / H_sacling_factor
+                np.array([0, 1, 0], dtype=np.float64) / H_scaling_factor
             )  # partial H partial x
             HT_P_y = (
-                np.array([0, 0, 1], dtype=np.float64) / H_sacling_factor
+                np.array([0, 0, 1], dtype=np.float64) / H_scaling_factor
             )  # partial H partial y
 
         if np.shape(M)[1] == 4:
@@ -549,20 +554,20 @@ def shape_grad_shape_func(
             H_T = np.array(
                 [
                     1,
-                    (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                    (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                    (x_G[i][2] - x_I[2]) / H_sacling_factor,
+                    (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                    (x_G[i][1] - x_I[1]) / H_scaling_factor,
+                    (x_G[i][2] - x_I[2]) / H_scaling_factor,
                 ],
                 dtype=np.float64,
             )
             HT_P_x = (
-                np.array([0, 1, 0, 0], dtype=np.float64) / H_sacling_factor
+                np.array([0, 1, 0, 0], dtype=np.float64) / H_scaling_factor
             )  # partial H partial x
             HT_P_y = (
-                np.array([0, 0, 1, 0], dtype=np.float64) / H_sacling_factor
+                np.array([0, 0, 1, 0], dtype=np.float64) / H_scaling_factor
             )  # partial H partial y
             HT_P_z = (
-                np.array([0, 0, 0, 1], dtype=np.float64) / H_sacling_factor
+                np.array([0, 0, 0, 1], dtype=np.float64) / H_scaling_factor
             )  # partial H partial y
             H_P_z = np.transpose(HT_P_z)
 
@@ -799,13 +804,13 @@ def shape_func_n_nodes_by_n_nodes(
         # compute the shape function and the gradient of shape function
         x_I = x_nodes[j]
 
-        H_sacling_factor = 1.0e-6
+        H_scaling_factor = 1.0e-6
         if np.shape(M)[1] == 3:
             H_T = np.array(
                 [
                     1,
-                    (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                    (x_G[i][1] - x_I[1]) / H_sacling_factor,
+                    (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                    (x_G[i][1] - x_I[1]) / H_scaling_factor,
                 ],
                 dtype=np.float64,
             )
@@ -813,9 +818,9 @@ def shape_func_n_nodes_by_n_nodes(
             H_T = np.array(
                 [
                     1,
-                    (x_G[i][0] - x_I[0]) / H_sacling_factor,
-                    (x_G[i][1] - x_I[1]) / H_sacling_factor,
-                    (x_G[i][2] - x_I[2]) / H_sacling_factor,
+                    (x_G[i][0] - x_I[0]) / H_scaling_factor,
+                    (x_G[i][1] - x_I[1]) / H_scaling_factor,
+                    (x_G[i][2] - x_I[2]) / H_scaling_factor,
                 ],
                 dtype=np.float64,
             )
