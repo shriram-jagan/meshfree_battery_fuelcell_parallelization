@@ -846,6 +846,7 @@ if dimention == 3:
         M_P_z_mechanical,
     )
 
+print(f"Done computing phi for all equations!", flush=True)
 
 num_non_zero_phi_a_electrolyte = np.shape(np.array(phi_nonzero_index_row_electrolyte))[
     0
@@ -981,6 +982,8 @@ if dimention == 3:
         HT3,
         phi_P_z_nonzerovalue_data_mechanical,
     )
+
+print(f"Done with shape grad func computation!", flush=True)
 
 # numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
 shape_func_electrolyte = csr_array(
