@@ -146,7 +146,7 @@ def c_lattice_complex(x):
 
 ######################################################################################################################################
 # define D, diffucivity which depends on x = real concentration/maximun concentration,
-# D is a n_g*(n_nodes*n_nodes)*(dimention*dimention) matrix
+# D is a n_g*(n_nodes*n_nodes)*(dimension*dimension) matrix
 ######################################################################################################################################
 @jit
 def Dn_complex(x, D_damage):

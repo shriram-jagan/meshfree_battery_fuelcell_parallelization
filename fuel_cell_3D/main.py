@@ -42,7 +42,7 @@ from shape_function_in_domain import (
 print("define geometry and analysis types")
 
 single_grain = str(config.SINGLE_GRAIN)  # True: single grain, False: read from an image
-dimention = config.DIMENSION  # 3d or 2d
+dimension = config.DIMENSION  # 3d or 2d
 
 IM_RKPM = str(
     config.IM_RKPM
@@ -69,7 +69,7 @@ integral_method = config.INTEGRAL_METHOD
 print("Define domain and parameters")
 
 if studied_physics == "fuel cell":
-    if dimention == 3:
+    if dimension == 3:
         x_min = config.X_MIN
         x_max = config.X_MAX
         y_min = config.Y_MIN
@@ -177,11 +177,11 @@ if studied_physics == "fuel cell":
 
     if single_grain == "False":
 
-        if dimention == 3:
+        if dimension == 3:
             # file_name = 'micro_3d_connected.tif'#'M_3d_3phases_simple.tif'# real geometry
             file_name = config.IMAGE_FILE_NAME  # simple geometry
             img_, unic_grain_id, num_pixels_xyz = read_in_image(
-                file_name, studied_physics, dimention
+                file_name, studied_physics, dimension
             )
 
             (
@@ -364,7 +364,7 @@ if integral_method == "gauss":
 
     if studied_physics == "fuel cell":
 
-        if dimention == 3:
+        if dimension == 3:
             x_G_electrolyte, det_J_time_weight_electrolyte = (
                 x_G_and_def_J_time_weight_3d_fuelcell_domain(
                     cell_nodes_electrolyte_x,
@@ -653,7 +653,7 @@ print("Compute shape function and its gradient in domain")
 
 c = 2  # support size
 
-if dimention == 2:
+if dimension == 2:
     HT0 = np.array([1, 0, 0], dtype=np.float64)  # transpose of the basis vector H
     HT1 = np.array(
         [0, -1, 0], dtype=np.float64
@@ -661,7 +661,7 @@ if dimention == 2:
     HT2 = np.array(
         [0, 0, -1], dtype=np.float64
     )  # for computation of gradient of shape function, d/dy
-if dimention == 3:
+if dimension == 3:
     HT0 = np.array([1, 0, 0, 0], dtype=np.float64)  # transpose of the basis vector H
     HT1 = np.array(
         [0, -1, 0, 0], dtype=np.float64
@@ -684,7 +684,7 @@ if studied_physics == "fuel cell" and single_grain == "False":
     )
 
 
-if dimention == 3:
+if dimension == 3:
     M_electrolyte = np.array(
         [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
     )
@@ -856,7 +856,7 @@ num_non_zero_phi_a_pore = np.shape(np.array(phi_nonzero_index_row_pore))[0]
 num_non_zero_phi_a_mechanical = np.shape(np.array(phi_nonzero_index_row_mechanical))[0]
 
 
-if dimention == 3:
+if dimension == 3:
     # print('yes')
     (
         shape_func_value_electrolyte,
@@ -1212,7 +1212,7 @@ grad_shape_func_y_times_det_J_time_weight_mechanical = csr_array(
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 
-if dimention == 3:
+if dimension == 3:
     grad_shape_func_z_electrolyte = csr_array(
         (
             np.array(grad_shape_func_z_value_electrolyte),
@@ -1313,7 +1313,7 @@ print(
 print("Compute shape function and its gradient on boundaries")
 
 
-if dimention == 3:
+if dimension == 3:
     M_b_electrolyte = np.array(
         [np.zeros((4, 4)) for _ in range(num_gauss_points_on_boundary_electrolyte)],
         dtype=np.float64,
@@ -1409,7 +1409,7 @@ num_non_zero_phi_a_b_mechanical = np.shape(
     np.array(phi_b_nonzero_index_row_mechanical)
 )[0]
 
-if dimention == 3:
+if dimension == 3:
     (
         shape_func_b_value_electrolyte,
         shape_func_b_times_det_J_b_time_weight_value_electrolyte,
@@ -1595,7 +1595,7 @@ grad_shape_func_b_y_times_det_J_b_time_weight_mechanical = csr_array(
     shape=(num_gauss_points_on_boundary_electrolyte, num_nodes_mechanical),
 )
 
-if dimention == 3:
+if dimension == 3:
     grad_shape_func_b_z_electrolyte = csr_array(
         (
             np.array(grad_shape_func_b_z_value_electrolyte),
@@ -1639,7 +1639,7 @@ if dimention == 3:
     )
 
 
-if dimention == 3:
+if dimension == 3:
     M_b_electrode = np.array(
         [np.zeros((4, 4)) for _ in range(num_gauss_points_on_boundary_electrode)],
         dtype=np.float64,
@@ -2011,7 +2011,7 @@ num_non_zero_phi_a_b_electrode_pore_pore = np.shape(
 )[0]
 
 
-if dimention == 3:
+if dimension == 3:
     (
         shape_func_b_value_electrode,
         shape_func_b_times_det_J_b_time_weight_value_electrode,
@@ -2756,7 +2756,7 @@ grad_shape_func_b_y_times_det_J_b_time_weight_pore = csr_array(
     shape=(num_gauss_points_on_boundary_pore, num_nodes_pore),
 )
 
-if dimention == 3:
+if dimension == 3:
     grad_shape_func_b_z_electrode = csr_array(
         (
             np.array(grad_shape_func_b_z_value_electrode),
@@ -2904,7 +2904,7 @@ if dimention == 3:
 """shape function with size n_nodes times n_nodes, this is used to predict the potential on all nodes"""
 
 
-if dimention == 3:
+if dimension == 3:
     M_electrolyte_nn = np.array(
         [np.zeros((4, 4)) for _ in range(num_nodes_electrolyte)]
     )
@@ -3096,7 +3096,7 @@ if dimention == 3:
 1. shape function used to interpolate the phi and phie at the interface line (3d), shape: number of gauss points on source line times number of nodes
 2. shape function used to interpolate the displacement at the fixed line (3d), shape: number of gauss points on fixed line times number of nodes
 """
-if dimention == 3:
+if dimension == 3:
     M_electrolyte_line_nodes = np.array(
         [np.zeros((4, 4)) for _ in range(num_source_line_gauss_points)]
     )
@@ -3536,7 +3536,7 @@ if studied_physics == "fuel cell":
     g_diretchlet_pore = np.ones((num_gauss_points_on_boundary_pore)) * c_boundary_pore
 
     # the normal vector (x component) is not constant
-    if dimention == 3:
+    if dimension == 3:
         normal_vector_x_electrolyte = 0
         normal_vector_x_electrode = 0
         normal_vector_x_pore = 0
@@ -3549,7 +3549,7 @@ if studied_physics == "fuel cell":
         normal_vector_z_electrolyte = 0
         normal_vector_z_pore = 0
 
-    if dimention == 3:
+    if dimension == 3:
 
         diff = 3000.0  # initial difference: 10, if initial_diff<threshold, stop newton interation
 
@@ -3631,7 +3631,7 @@ if studied_physics == "fuel cell":
             if delta_point_source == "True":
 
                 K_electrolyte, f_electrolyte = diffusion_matrix_fuel_cell(
-                    dimention,
+                    dimension,
                     line_source_electrolyte,
                     shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight,
                     g_diretchlet_electrolyte,
@@ -3657,7 +3657,7 @@ if studied_physics == "fuel cell":
             else:
                 K_electrolyte, f_electrolyte = (
                     diffusion_matrix_fuel_cell_distributed_point_source(
-                        dimention,
+                        dimension,
                         distributed_line_source_electrolyte,
                         shape_func_b_times_det_J_b_time_weight_distributed_point_source_surface,
                         g_diretchlet_electrolyte,
@@ -3697,7 +3697,7 @@ if studied_physics == "fuel cell":
             )
 
             K_electrode, f_electrode = diffusion_matrix_fuel_cell(
-                dimention,
+                dimension,
                 line_source_electrode,
                 shape_func_line_n_nodes_electrode_times_det_J_b_time_weight,
                 g_diretchlet_electrode,
@@ -3722,7 +3722,7 @@ if studied_physics == "fuel cell":
             )
 
             K_pore, f_pore = diffusion_matrix_fuel_cell(
-                dimention,
+                dimension,
                 line_source_pore,
                 shape_func_line_n_nodes_pore_times_det_J_b_time_weight,
                 g_diretchlet_pore,
@@ -4147,7 +4147,7 @@ if studied_physics == "fuel cell":
     print("on GP:", np.max(C_on_GP_electrode))
     print("on GP:", np.max(C_on_GP_pore))
 
-    if dimention == 3:
+    if dimension == 3:
 
         potential_on_nodes_save_electrolyte = np.zeros((num_nodes_electrolyte, 4))
         potential_on_nodes_save_electrolyte[:, :3] = x_nodes_electrolyte

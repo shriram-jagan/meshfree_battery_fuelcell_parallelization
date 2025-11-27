@@ -11,7 +11,7 @@ from scipy.sparse.linalg import eigs, spsolve
 
 
 def diffusion_matrix_fuel_cell(
-    dimention,
+    dimension,
     point_or_line_source,
     shape_func_point_or_line_nodes,
     g_diretchlet,
@@ -41,7 +41,7 @@ def diffusion_matrix_fuel_cell(
     ).T * grad_shape_func_x + (
         (grad_shape_func_y_times_det_J_time_weight).multiply(global_diffusion)
     ).T * grad_shape_func_y
-    if dimention == 3:
+    if dimension == 3:
         K1 += (
             (grad_shape_func_z_times_det_J_time_weight).multiply(global_diffusion)
         ).T * grad_shape_func_z
@@ -54,7 +54,7 @@ def diffusion_matrix_fuel_cell(
         ).T
         * shape_func_b
     )
-    if dimention == 3:
+    if dimension == 3:
         K2 -= (
             grad_shape_func_b_z_times_det_J_b_time_weight.multiply(normal_vector_z)
         ).T * shape_func_b
@@ -79,7 +79,7 @@ def diffusion_matrix_fuel_cell(
         ).T
         * g_diretchlet
     )
-    if dimention == 3:
+    if dimension == 3:
         f2 -= (
             grad_shape_func_b_z_times_det_J_b_time_weight.multiply(normal_vector_z)
         ).T * g_diretchlet
@@ -97,7 +97,7 @@ def diffusion_matrix_fuel_cell(
 
 
 def diffusion_matrix_fuel_cell_distributed_point_source(
-    dimention,
+    dimension,
     distributed_point_or_line_source,
     shape_func_distributed_point_or_line_nodes,
     g_diretchlet,
@@ -127,7 +127,7 @@ def diffusion_matrix_fuel_cell_distributed_point_source(
     ).T * grad_shape_func_x + (
         (grad_shape_func_y_times_det_J_time_weight).multiply(global_diffusion)
     ).T * grad_shape_func_y
-    if dimention == 3:
+    if dimension == 3:
         K1 += (
             (grad_shape_func_z_times_det_J_time_weight).multiply(global_diffusion)
         ).T * grad_shape_func_z
@@ -140,7 +140,7 @@ def diffusion_matrix_fuel_cell_distributed_point_source(
         ).T
         * shape_func_b
     )
-    if dimention == 3:
+    if dimension == 3:
         K2 -= (
             grad_shape_func_b_z_times_det_J_b_time_weight.multiply(normal_vector_z)
         ).T * shape_func_b
@@ -165,7 +165,7 @@ def diffusion_matrix_fuel_cell_distributed_point_source(
         ).T
         * g_diretchlet
     )
-    if dimention == 3:
+    if dimension == 3:
         f2 -= (
             grad_shape_func_b_z_times_det_J_b_time_weight.multiply(normal_vector_z)
         ).T * g_diretchlet

@@ -16,7 +16,7 @@ from scipy.sparse.linalg import eigs, spsolve
 #########################
 
 
-def read_in_image(file_name, studied_physics, dimention):
+def read_in_image(file_name, studied_physics, dimension):
 
     img_ = tifffile.imread(file_name)  # np array
 
@@ -36,7 +36,7 @@ def read_in_image(file_name, studied_physics, dimention):
     num_pixels_xyz.append(num_pixels_x)
     num_pixels_xyz.append(num_pixels_y)
 
-    if dimention == 3:
+    if dimension == 3:
         num_pixels_z = np.shape(img_)[2]
         num_pixels_xyz.append(num_pixels_z)
 
