@@ -3165,13 +3165,23 @@ if dimension == 3:
         shape=(num_source_line_gauss_points, num_nodes_electrolyte),
     )
 
-    shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight = (
-        shape_func_line_n_nodes_electrolyte.copy()
-    )
-    shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight.data *= (
-        det_J_b_time_weight_line[
-            shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight.indices
+    # Apply weights before creating sparse matrix (correct approach)
+    weighted_values_electrolyte = (
+        np.array(shape_func_value_electrolyte_line_nodes)
+        * det_J_b_time_weight_line[
+            np.array(phi_nonzero_index_row_electrolyte_line_nodes)
         ]
+    )
+
+    shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight = csr_array(
+        (
+            weighted_values_electrolyte,
+            (
+                np.array(phi_nonzero_index_row_electrolyte_line_nodes),
+                np.array(phi_nonzero_index_column_electrolyte_line_nodes),
+            ),
+        ),
+        shape=(num_source_line_gauss_points, num_nodes_electrolyte),
     )
 
     M_electrode_line_nodes = np.array(
@@ -3241,13 +3251,21 @@ if dimension == 3:
         ),
         shape=(num_source_line_gauss_points, num_nodes_electrode),
     )
-    shape_func_line_n_nodes_electrode_times_det_J_b_time_weight = (
-        shape_func_line_n_nodes_electrode.copy()
+    # Apply weights before creating sparse matrix (correct approach)
+    weighted_values_electrode = (
+        np.array(shape_func_value_electrode_line_nodes)
+        * det_J_b_time_weight_line[np.array(phi_nonzero_index_row_electrode_line_nodes)]
     )
-    shape_func_line_n_nodes_electrode_times_det_J_b_time_weight.data *= (
-        det_J_b_time_weight_line[
-            shape_func_line_n_nodes_electrode_times_det_J_b_time_weight.indices
-        ]
+
+    shape_func_line_n_nodes_electrode_times_det_J_b_time_weight = csr_array(
+        (
+            weighted_values_electrode,
+            (
+                np.array(phi_nonzero_index_row_electrode_line_nodes),
+                np.array(phi_nonzero_index_column_electrode_line_nodes),
+            ),
+        ),
+        shape=(num_source_line_gauss_points, num_nodes_electrode),
     )
 
     M_pore_line_nodes = np.array(
@@ -3317,13 +3335,21 @@ if dimension == 3:
         ),
         shape=(num_source_line_gauss_points, num_nodes_pore),
     )
-    shape_func_line_n_nodes_pore_times_det_J_b_time_weight = (
-        shape_func_line_n_nodes_pore.copy()
+    # Apply weights before creating sparse matrix (correct approach)
+    weighted_values_pore = (
+        np.array(shape_func_value_pore_line_nodes)
+        * det_J_b_time_weight_line[np.array(phi_nonzero_index_row_pore_line_nodes)]
     )
-    shape_func_line_n_nodes_pore_times_det_J_b_time_weight.data *= (
-        det_J_b_time_weight_line[
-            shape_func_line_n_nodes_pore_times_det_J_b_time_weight.indices
-        ]
+
+    shape_func_line_n_nodes_pore_times_det_J_b_time_weight = csr_array(
+        (
+            weighted_values_pore,
+            (
+                np.array(phi_nonzero_index_row_pore_line_nodes),
+                np.array(phi_nonzero_index_column_pore_line_nodes),
+            ),
+        ),
+        shape=(num_source_line_gauss_points, num_nodes_pore),
     )
 
     M_fixed_nodes = np.array([np.zeros((4, 4)) for _ in range(num_fixed_gauss_points)])
@@ -3561,9 +3587,10 @@ if studied_physics == "fuel cell":
         """
         if delta_point_source == "False":
 
-            phi_old_line_gauss_electrolyte = (
-                shape_func_line_n_nodes_electrolyte * phi_old_electrolyte
-            )
+            # Use dot product to ensure dense result, ravel to get 1D array
+            phi_old_line_gauss_electrolyte = shape_func_line_n_nodes_electrolyte.dot(
+                phi_old_electrolyte
+            ).ravel()
 
             i_HOR = i_0 * np.exp(
                 0.5 * Fday / R / T * (-phi_old_line_gauss_electrolyte + V_app - E_0)
@@ -3579,9 +3606,10 @@ if studied_physics == "fuel cell":
             line_source_electrode = np.zeros(np.shape(i_HOR)[0])
             line_source_pore = np.zeros(np.shape(i_HOR)[0])
         else:
-            phi_old_line_gauss_electrolyte = (
-                shape_func_line_n_nodes_electrolyte * phi_old_electrolyte
-            )
+            # Use dot product to ensure dense result, ravel to get 1D array
+            phi_old_line_gauss_electrolyte = shape_func_line_n_nodes_electrolyte.dot(
+                phi_old_electrolyte
+            ).ravel()
 
             i_HOR = i_0 * np.exp(
                 0.5 * Fday / R / T * (-phi_old_line_gauss_electrolyte + V_app - E_0)
@@ -3601,11 +3629,14 @@ if studied_physics == "fuel cell":
             )  # -i_HOR/96485#0.0007852916046055233*np.ones(2)#i_HOR
             line_source_electrode = np.zeros(np.shape(i_HOR)[0])
 
-        C_old_electrolyte_electrode = (
-            shape_func_b_electrolyte_electrode_electrode * C_old_electrode
-        )
+        # Use dot product for matrix-vector multiplication (sparse @ dense)
+        C_old_electrolyte_electrode = shape_func_b_electrolyte_electrode_electrode.dot(
+            C_old_electrode
+        ).ravel()
         phi_old_electrolyte_electrode = (
-            shape_func_b_electrolyte_electrode_electrolyte * phi_old_electrolyte
+            shape_func_b_electrolyte_electrode_electrolyte.dot(
+                phi_old_electrolyte
+            ).ravel()
         )
         i_solid = (
             i_0_solid
@@ -3618,7 +3649,10 @@ if studied_physics == "fuel cell":
         interface_source_electrolyte_electrode_electrolyte = -i_solid / 2
         interface_source_electrolyte_electrode_electrode = i_solid / 2 / 96485
 
-        C_old_electrode_pore = shape_func_b_electrode_pore_electrode * C_old_electrode
+        # Use dot product for matrix-vector multiplication (sparse @ dense)
+        C_old_electrode_pore = shape_func_b_electrode_pore_electrode.dot(
+            C_old_electrode
+        ).ravel()
         J_interface = k_gas * (c_boundary - C_old_electrode_pore)
         interface_source_electrode_pore_electrode_old = -J_interface
         interface_source_electrode_pore_pore_old = J_interface
@@ -3781,8 +3815,9 @@ if studied_physics == "fuel cell":
 
             # update the source term
             if delta_point_source == "True":
+                # Use dot product to ensure dense result, ravel to get 1D array
                 phi_new_line_gauss_electrolyte = (
-                    shape_func_line_n_nodes_electrolyte * phi_old_electrolyte
+                    shape_func_line_n_nodes_electrolyte.dot(phi_old_electrolyte).ravel()
                 )
                 i_HOR = i_0 * np.exp(
                     0.5 * Fday / R / T * (-phi_new_line_gauss_electrolyte + V_app - E_0)
@@ -3814,11 +3849,17 @@ if studied_physics == "fuel cell":
                 pass
 
             # flux across electrolyte/electrode interface
+            # Use dot product for matrix-vector multiplication (sparse @ dense)
             C_new_electrolyte_electrode = (
-                shape_func_b_electrolyte_electrode_electrode * C_old_electrode
+                shape_func_b_electrolyte_electrode_electrode.dot(
+                    C_old_electrode
+                ).ravel()
             )
+            # Use dot product for matrix-vector multiplication (sparse @ dense)
             phi_new_electrolyte_electrode = (
-                shape_func_b_electrolyte_electrode_electrolyte * phi_old_electrolyte
+                shape_func_b_electrolyte_electrode_electrolyte.dot(
+                    phi_old_electrolyte
+                ).ravel()
             )
             i_solid = (
                 i_0_solid
@@ -3844,9 +3885,10 @@ if studied_physics == "fuel cell":
             )
 
             # flux across the electrode/pore interface
-            C_new_electrode_pore = (
-                shape_func_b_electrode_pore_electrode * C_old_electrode
-            )
+            # Use dot product for matrix-vector multiplication (sparse @ dense)
+            C_new_electrode_pore = shape_func_b_electrode_pore_electrode.dot(
+                C_old_electrode
+            ).ravel()
             J_interface = k_gas * (c_boundary - C_new_electrode_pore)
             interface_source_electrode_pore_electrode_new = -J_interface
             interface_source_electrode_pore_pore_new = J_interface
@@ -3943,7 +3985,7 @@ if studied_physics == "fuel cell":
             np.ones(num_gauss_points_in_domain_electrolyte) * c_boundary
         )
         c_G_domain = np.concatenate(
-            (c_G_domain_electrolyte, shape_func_electrode * C_new_electrode)
+            (c_G_domain_electrolyte, shape_func_electrode.dot(C_new_electrode).ravel())
         )
 
         # compute Beta (expansion coeffieicent)
@@ -4129,15 +4171,18 @@ if studied_physics == "fuel cell":
     print(np.shape(x_G_mechanical))
     print(np.shape(D_damage))
 
-    phi_on_nodes_electrolyte = (
-        shape_func_n_nodes_n_nodes_electrolyte * phi_new_electrolyte
-    )
-    C_on_nodes_electrode = shape_func_n_nodes_n_nodes_electrode * C_new_electrode
-    C_on_nodes_pore = shape_func_n_nodes_n_nodes_pore * C_new_pore
+    # Use dot product for interpolation to nodes and Gauss points
+    phi_on_nodes_electrolyte = shape_func_n_nodes_n_nodes_electrolyte.dot(
+        phi_new_electrolyte
+    ).ravel()
+    C_on_nodes_electrode = shape_func_n_nodes_n_nodes_electrode.dot(
+        C_new_electrode
+    ).ravel()
+    C_on_nodes_pore = shape_func_n_nodes_n_nodes_pore.dot(C_new_pore).ravel()
 
-    phi_on_GP_electrolyte = shape_func_electrolyte * phi_new_electrolyte
-    C_on_GP_electrode = shape_func_electrode * C_new_electrode
-    C_on_GP_pore = shape_func_pore * C_new_pore
+    phi_on_GP_electrolyte = shape_func_electrolyte.dot(phi_new_electrolyte).ravel()
+    C_on_GP_electrode = shape_func_electrode.dot(C_new_electrode).ravel()
+    C_on_GP_pore = shape_func_pore.dot(C_new_pore).ravel()
 
     print("on nodes:", np.max(phi_on_nodes_electrolyte))
     print("on nodes:", np.max(C_on_nodes_electrode))
@@ -4157,9 +4202,9 @@ if studied_physics == "fuel cell":
             (num_gauss_points_in_domain_electrolyte, 4)
         )
         potential_on_GP_save_electrolyte[:, :3] = x_G_electrolyte
-        potential_on_GP_save_electrolyte[:, 3] = (
-            shape_func_electrolyte * phi_new_electrolyte
-        )
+        potential_on_GP_save_electrolyte[:, 3] = shape_func_electrolyte.dot(
+            phi_new_electrolyte
+        ).ravel()
 
         C_on_nodes_save_electrode = np.zeros((num_nodes_electrode, 4))
         C_on_nodes_save_electrode[:, :3] = x_nodes_electrode
@@ -4167,7 +4212,7 @@ if studied_physics == "fuel cell":
 
         C_on_GP_save_electrode = np.zeros((num_gauss_points_in_domain_electrode, 4))
         C_on_GP_save_electrode[:, :3] = x_G_electrode
-        C_on_GP_save_electrode[:, 3] = shape_func_electrode * C_new_electrode
+        C_on_GP_save_electrode[:, 3] = shape_func_electrode.dot(C_new_electrode).ravel()
 
         C_on_nodes_save_pore = np.zeros((num_nodes_pore, 4))
         C_on_nodes_save_pore[:, :3] = x_nodes_pore
@@ -4175,7 +4220,7 @@ if studied_physics == "fuel cell":
 
         C_on_GP_save_pore = np.zeros((num_gauss_points_in_domain_pore, 4))
         C_on_GP_save_pore[:, :3] = x_G_pore
-        C_on_GP_save_pore[:, 3] = shape_func_pore * C_new_pore
+        C_on_GP_save_pore[:, 3] = shape_func_pore.dot(C_new_pore).ravel()
 
         # Plotting is controlled by the config flag
         if config.ENABLE_PLOTTING:

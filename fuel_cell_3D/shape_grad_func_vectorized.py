@@ -161,14 +161,24 @@ def shape_grad_shape_func_vectorized(
         dtype: Data type for computations (np.float32 or np.float64)
     """
 
-    # Convert to numpy arrays if needed
-    phi_nonzero_index_row = np.array(phi_nonzero_index_row, dtype=np.int32)
-    phi_nonzero_index_column = np.array(phi_nonzero_index_column, dtype=np.int32)
-    phi_nonzerovalue_data = np.array(phi_nonzerovalue_data, dtype=dtype)
+    # Convert to numpy arrays if needed - handle lists of floats
+    # First convert to float to handle any numeric type, then to int
+    try:
+        phi_nonzero_index_row = np.asarray(phi_nonzero_index_row).astype(np.int32)
+        phi_nonzero_index_column = np.asarray(phi_nonzero_index_column).astype(np.int32)
+        phi_nonzerovalue_data = np.asarray(phi_nonzerovalue_data, dtype=dtype)
+    except (ValueError, TypeError) as e:
+        print(f"Error converting sparse indices to arrays: {e}")
+        print(f"phi_nonzero_index_row type: {type(phi_nonzero_index_row)}")
+        if hasattr(phi_nonzero_index_row, "__len__"):
+            print(f"phi_nonzero_index_row length: {len(phi_nonzero_index_row)}")
+            if len(phi_nonzero_index_row) > 0:
+                print(f"First element type: {type(phi_nonzero_index_row[0])}")
+        raise
 
     if phi_P_x_nonzerovalue_data is not None:
-        phi_P_x_nonzerovalue_data = np.array(phi_P_x_nonzerovalue_data, dtype=dtype)
-        phi_P_y_nonzerovalue_data = np.array(phi_P_y_nonzerovalue_data, dtype=dtype)
+        phi_P_x_nonzerovalue_data = np.asarray(phi_P_x_nonzerovalue_data, dtype=dtype)
+        phi_P_y_nonzerovalue_data = np.asarray(phi_P_y_nonzerovalue_data, dtype=dtype)
 
     # Determine dimension
     is_3d = M.shape[1] == 4
@@ -186,7 +196,9 @@ def shape_grad_shape_func_vectorized(
     gauss_to_local = {g: i for i, g in enumerate(unique_gauss_points)}
 
     # Pre-compute M_inv for each sparse pair
-    M_inv_indices = np.array([gauss_to_local[g] for g in phi_nonzero_index_row])
+    M_inv_indices = np.array(
+        [gauss_to_local[int(g)] for g in phi_nonzero_index_row], dtype=np.int32
+    )
     M_inv_sparse = M_inv_all[M_inv_indices]  # (num_non_zero_phi_a, n_dim, n_dim)
 
     # Compute H matrices for all sparse pairs
@@ -204,7 +216,9 @@ def shape_grad_shape_func_vectorized(
             )
         )
         if phi_P_z_nonzerovalue_data is not None:
-            phi_P_z_nonzerovalue_data = np.array(phi_P_z_nonzerovalue_data, dtype=dtype)
+            phi_P_z_nonzerovalue_data = np.asarray(
+                phi_P_z_nonzerovalue_data, dtype=dtype
+            )
     else:
         (H_T, HT_P_x, HT_P_y, H, H_P_x, H_P_y) = compute_H_matrices_sparse_2d(
             x_G,
@@ -311,6 +325,8 @@ def shape_grad_shape_func_vectorized(
             grad_shape_func_z_value = term1_z + term2_z + term3_z
 
     # Compute weighted values
+    # Ensure det_J_time_weight is a numpy array
+    det_J_time_weight = np.asarray(det_J_time_weight, dtype=dtype)
     det_J_weights = det_J_time_weight[phi_nonzero_index_row]
     shape_func_times_det_J_time_weight_value = shape_func_value * det_J_weights
     grad_shape_func_x_times_det_J_time_weight_value = (
