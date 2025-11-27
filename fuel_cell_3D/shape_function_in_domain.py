@@ -8,6 +8,14 @@ from numpy.linalg import eig, norm
 from scipy.sparse import bmat, csr_array
 from scipy.sparse.linalg import eigs, spsolve
 
+# Try to import the vectorized version if available
+try:
+    from shape_function_vectorized import compute_phi_M_standard_vectorized
+
+    VECTORIZED_AVAILABLE = True
+except ImportError:
+    VECTORIZED_AVAILABLE = False
+
 
 # @jit  # Disabled due to Numba type inference issues with empty lists
 def compute_phi_M_with_interface_method(
@@ -256,19 +264,138 @@ def compute_phi_M_with_interface_method(
 
 
 # @jit  # Disabled due to Numba type inference issues
+def compute_z_and_H_2d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
+    """Compute z values and H matrices for 2D case (M shape is 3x3)."""
+
+    x_I = x_nodes_j
+
+    z_ij = (
+        ((x_G_i[0] - x_nodes_j[0]) ** 2 + (x_G_i[1] - x_nodes_j[1]) ** 2) ** 0.5
+    ) / a_j
+
+    z_ij_P_x = (x_G_i[0] - x_nodes_j[0]) / (
+        a_j * z_ij * a_j + eps
+    )  # partial z partial x
+    z_ij_P_y = (x_G_i[1] - x_nodes_j[1]) / (
+        a_j * z_ij * a_j + eps
+    )  # partial z partial y
+
+    H_T = np.array(
+        [
+            1,
+            (x_G_i[0] - x_I[0]) / H_scaling_factor,
+            (x_G_i[1] - x_I[1]) / H_scaling_factor,
+        ],
+        dtype=np.float64,
+    )
+    HT_P_x = (
+        np.array([0, 1, 0], dtype=np.float64) / H_scaling_factor
+    )  # partial H partial x
+    HT_P_y = (
+        np.array([0, 0, 1], dtype=np.float64) / H_scaling_factor
+    )  # partial H partial y
+
+    H = np.transpose(H_T)
+    H_P_x = np.transpose(HT_P_x)
+    H_P_y = np.transpose(HT_P_y)
+
+    return (
+        z_ij,
+        z_ij_P_x,
+        z_ij_P_y,
+        None,
+        H_T,
+        HT_P_x,
+        HT_P_y,
+        None,
+        H,
+        H_P_x,
+        H_P_y,
+        None,
+    )
+
+
+# @jit  # Disabled due to Numba type inference issues
+def compute_z_and_H_3d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
+    """Compute z values and H matrices for 3D case (M shape is 4x4)."""
+
+    x_I = x_nodes_j
+
+    z_ij = (
+        (
+            (x_G_i[0] - x_nodes_j[0]) ** 2
+            + (x_G_i[1] - x_nodes_j[1]) ** 2
+            + (x_G_i[2] - x_nodes_j[2]) ** 2
+        )
+        ** 0.5
+    ) / a_j
+
+    z_ij_P_x = (x_G_i[0] - x_nodes_j[0]) / (
+        a_j * z_ij * a_j + eps
+    )  # partial z partial x
+    z_ij_P_y = (x_G_i[1] - x_nodes_j[1]) / (
+        a_j * z_ij * a_j + eps
+    )  # partial z partial y
+    z_ij_P_z = (x_G_i[2] - x_nodes_j[2]) / (
+        a_j * z_ij * a_j + eps
+    )  # partial z partial z
+
+    H_T = np.array(
+        [
+            1,
+            (x_G_i[0] - x_I[0]) / H_scaling_factor,
+            (x_G_i[1] - x_I[1]) / H_scaling_factor,
+            (x_G_i[2] - x_I[2]) / H_scaling_factor,
+        ],
+        dtype=np.float64,
+    )
+    HT_P_x = (
+        np.array([0, 1, 0, 0], dtype=np.float64) / H_scaling_factor
+    )  # partial H partial x
+    HT_P_y = (
+        np.array([0, 0, 1, 0], dtype=np.float64) / H_scaling_factor
+    )  # partial H partial y
+    HT_P_z = (
+        np.array([0, 0, 0, 1], dtype=np.float64) / H_scaling_factor
+    )  # partial H partial z
+
+    H = np.transpose(H_T)
+    H_P_x = np.transpose(HT_P_x)
+    H_P_y = np.transpose(HT_P_y)
+    H_P_z = np.transpose(HT_P_z)
+
+    return (
+        z_ij,
+        z_ij_P_x,
+        z_ij_P_y,
+        z_ij_P_z,
+        H_T,
+        HT_P_x,
+        HT_P_y,
+        HT_P_z,
+        H,
+        H_P_x,
+        H_P_y,
+        H_P_z,
+    )
+
+
+# @jit  # Disabled due to Numba type inference issues
 def compute_phi_M_standard(
     x_G,
+    Gauss_grain_id,
     x_nodes,
     nodes_grain_id,
     a,
     M,
     M_P_x,
     M_P_y,
+    num_interface_segments,
+    interface_nodes,
+    BxByCxCy,
     M_P_z=None,
 ):
     """Compute phi_M using standard method (else case)."""
-
-    print(f"Compute phi_M using standard method")
 
     if M_P_z is None:
         # Initialize with zeros or correct shape
@@ -292,77 +419,41 @@ def compute_phi_M_standard(
     for i in range(np.shape(x_G)[0]):
         for j in range(np.shape(x_nodes)[0]):
 
-            x_I = x_nodes[j]
-
+            # Call appropriate function based on dimension
             if np.shape(M)[1] == 3:
-                z_ij = (
-                    (
-                        (x_G[i, 0] - x_nodes[j, 0]) ** 2
-                        + (x_G[i, 1] - x_nodes[j, 1]) ** 2
-                    )
-                    ** 0.5
-                ) / a[j]
-                z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                    a[j] * z_ij * a[j] + eps
-                )  # partial z partial x, add the small number to force the term with machine accuracy
-                z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                    a[j] * z_ij * a[j] + eps
-                )  # partial z partial y
-                H_T = np.array(
-                    [
-                        1,
-                        (x_G[i][0] - x_I[0]) / H_scaling_factor,
-                        (x_G[i][1] - x_I[1]) / H_scaling_factor,
-                    ],
-                    dtype=np.float64,
-                )
-                HT_P_x = (
-                    np.array([0, 1, 0], dtype=np.float64) / H_scaling_factor
-                )  # partial H partial x
-                HT_P_y = (
-                    np.array([0, 0, 1], dtype=np.float64) / H_scaling_factor
-                )  # partial H partial y
-
-            if np.shape(M)[1] == 4:
-                z_ij = (
-                    (
-                        (x_G[i, 0] - x_nodes[j, 0]) ** 2
-                        + (x_G[i, 1] - x_nodes[j, 1]) ** 2
-                        + (x_G[i, 2] - x_nodes[j, 2]) ** 2
-                    )
-                    ** 0.5
-                ) / a[j]
-                z_ij_P_x = (x_G[i, 0] - x_nodes[j, 0]) / (
-                    a[j] * z_ij * a[j] + eps
-                )  # partial z partial x, add the small number to force the term with machine accuracy
-                z_ij_P_y = (x_G[i, 1] - x_nodes[j, 1]) / (
-                    a[j] * z_ij * a[j] + eps
-                )  # partial z partial y
-                z_ij_P_z = (x_G[i, 2] - x_nodes[j, 2]) / (
-                    a[j] * z_ij * a[j] + eps
-                )  # partial z partial y
-                H_T = np.array(
-                    [
-                        1,
-                        (x_G[i][0] - x_I[0]) / H_scaling_factor,
-                        (x_G[i][1] - x_I[1]) / H_scaling_factor,
-                        (x_G[i][2] - x_I[2]) / H_scaling_factor,
-                    ],
-                    dtype=np.float64,
-                )
-                HT_P_x = (
-                    np.array([0, 1, 0, 0], dtype=np.float64) / H_scaling_factor
-                )  # partial H partial x
-                HT_P_y = (
-                    np.array([0, 0, 1, 0], dtype=np.float64) / H_scaling_factor
-                )  # partial H partial y
-                HT_P_z = (
-                    np.array([0, 0, 0, 1], dtype=np.float64) / H_scaling_factor
-                )  # partial H partial z
-                H_P_z = np.transpose(HT_P_z)
-            H = np.transpose(H_T)
-            H_P_x = np.transpose(HT_P_x)
-            H_P_y = np.transpose(HT_P_y)
+                # 2D case
+                (
+                    z_ij,
+                    z_ij_P_x,
+                    z_ij_P_y,
+                    z_ij_P_z,
+                    H_T,
+                    HT_P_x,
+                    HT_P_y,
+                    HT_P_z,
+                    H,
+                    H_P_x,
+                    H_P_y,
+                    H_P_z,
+                ) = compute_z_and_H_2d(x_G[i], x_nodes[j], a[j], H_scaling_factor, eps)
+            elif np.shape(M)[1] == 4:
+                # 3D case
+                (
+                    z_ij,
+                    z_ij_P_x,
+                    z_ij_P_y,
+                    z_ij_P_z,
+                    H_T,
+                    HT_P_x,
+                    HT_P_y,
+                    HT_P_z,
+                    H,
+                    H_P_x,
+                    H_P_y,
+                    H_P_z,
+                ) = compute_z_and_H_3d(x_G[i], x_nodes[j], a[j], H_scaling_factor, eps)
+            else:
+                raise ValueError(f"Unsupported M shape: {np.shape(M)[1]}")
 
             if z_ij >= 0 and z_ij < 0.5:
 
@@ -447,8 +538,13 @@ def compute_phi_M(
     IM_RKPM,
     single_grain,
     M_P_z=None,
+    use_vectorized=True,  # New parameter to control vectorization
 ):
-    """Main compute_phi_M function that delegates to specialized functions based on conditions."""
+    """Main compute_phi_M function that delegates to specialized functions based on conditions.
+
+    Args:
+        use_vectorized: If True and vectorized version is available, use the vectorized impl
+    """
 
     if single_grain == "False" and IM_RKPM == "True":
         # Use interface method
@@ -467,17 +563,38 @@ def compute_phi_M(
             M_P_z,
         )
     else:
-        # Use standard method
-        return compute_phi_M_standard(
-            x_G,
-            x_nodes,
-            a,
-            M,
-            M_P_x,
-            M_P_y,
-            BxByCxCy,
-            M_P_z,
-        )
+        # Use standard method - with optional vectorization
+        if use_vectorized and VECTORIZED_AVAILABLE:
+            print(f"using vectorized phi_m_standard")
+            return compute_phi_M_standard_vectorized(
+                x_G,
+                Gauss_grain_id,
+                x_nodes,
+                nodes_grain_id,
+                a,
+                M,
+                M_P_x,
+                M_P_y,
+                num_interface_segments,
+                interface_nodes,
+                BxByCxCy,
+                M_P_z,
+            )
+        else:
+            return compute_phi_M_standard(
+                x_G,
+                Gauss_grain_id,
+                x_nodes,
+                nodes_grain_id,
+                a,
+                M,
+                M_P_x,
+                M_P_y,
+                num_interface_segments,
+                interface_nodes,
+                BxByCxCy,
+                M_P_z,
+            )
 
 
 # @jit  # this is taking so long time, we are vectorizing this part
