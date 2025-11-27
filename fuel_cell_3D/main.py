@@ -4092,9 +4092,10 @@ if studied_physics == "fuel cell":
         ]  # disp at nodes along y
         uz = u_disp[num_nodes_mechanical * 2 :]  # disp at nodes along y
 
-        ux_gauss = shape_func_mechanical * ux
-        uy_gauss = shape_func_mechanical * uy
-        uz_gauss = shape_func_mechanical * uz
+        # Use dot product for matrix-vector multiplication
+        ux_gauss = shape_func_mechanical.dot(ux).ravel()
+        uy_gauss = shape_func_mechanical.dot(uy).ravel()
+        uz_gauss = shape_func_mechanical.dot(uz).ravel()
 
         # predict the damage factor:
         """
@@ -4103,30 +4104,39 @@ if studied_physics == "fuel cell":
         !!!!! reshape (grad_shape_func_x*ux)
         """
 
-        epsilon_x = (grad_shape_func_x_mechanical * ux).reshape(
+        epsilon_x = (grad_shape_func_x_mechanical.dot(ux)).reshape(
             num_gauss_points_in_domain_mechanical, 1
         )  # normal strain along x at all gauss points
-        epsilon_y = (grad_shape_func_y_mechanical * uy).reshape(
+        epsilon_y = (grad_shape_func_y_mechanical.dot(uy)).reshape(
             num_gauss_points_in_domain_mechanical, 1
         )  # normal strain along y at all gauss points
-        epsilon_z = (grad_shape_func_z_mechanical * uz).reshape(
+        epsilon_z = (grad_shape_func_z_mechanical.dot(uz)).reshape(
             num_gauss_points_in_domain_mechanical, 1
         )  # normal strain along x at all gauss points
 
         gamma_xy = (
-            (grad_shape_func_x_mechanical * uy + grad_shape_func_y_mechanical * ux)
+            (
+                grad_shape_func_x_mechanical.dot(uy)
+                + grad_shape_func_y_mechanical.dot(ux)
+            )
             * 0.5
         ).reshape(
             num_gauss_points_in_domain_mechanical, 1
         )  # shear strain aat all gauss points, (grad_shape_func_x*uy+ grad_shape_func_y*ux) is an array
         gamma_xz = (
-            (grad_shape_func_x_mechanical * uz + grad_shape_func_z_mechanical * ux)
+            (
+                grad_shape_func_x_mechanical.dot(uz)
+                + grad_shape_func_z_mechanical.dot(ux)
+            )
             * 0.5
         ).reshape(
             num_gauss_points_in_domain_mechanical, 1
         )  # shear strain aat all gauss points, (grad_shape_func_x*uy+ grad_shape_func_y*ux) is an array
         gamma_yz = (
-            (grad_shape_func_z_mechanical * uy + grad_shape_func_y_mechanical * uz)
+            (
+                grad_shape_func_z_mechanical.dot(uy)
+                + grad_shape_func_y_mechanical.dot(uz)
+            )
             * 0.5
         ).reshape(
             num_gauss_points_in_domain_mechanical, 1

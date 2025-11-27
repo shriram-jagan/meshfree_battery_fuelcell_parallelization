@@ -27,7 +27,6 @@ except ImportError:
 VECTORIZED_AVAILABLE = VECTORIZED_PHI_AVAILABLE
 
 
-# @jit  # Disabled due to Numba type inference issues with empty lists
 def compute_phi_M_with_interface_method(
     x_G,
     Gauss_grain_id,
@@ -273,7 +272,6 @@ def compute_phi_M_with_interface_method(
     )
 
 
-# @jit  # Disabled due to Numba type inference issues
 def compute_z_and_H_2d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
     """Compute z values and H matrices for 2D case (M shape is 3x3)."""
 
@@ -325,7 +323,6 @@ def compute_z_and_H_2d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
     )
 
 
-# @jit  # Disabled due to Numba type inference issues
 def compute_z_and_H_3d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
     """Compute z values and H matrices for 3D case (M shape is 4x4)."""
 
@@ -390,7 +387,6 @@ def compute_z_and_H_3d(x_G_i, x_nodes_j, a_j, H_scaling_factor, eps):
     )
 
 
-# @jit  # Disabled due to Numba type inference issues
 def compute_phi_M_standard(
     x_G,
     Gauss_grain_id,
@@ -532,7 +528,6 @@ def compute_phi_M_standard(
     )
 
 
-# @jit  # Not needed for wrapper function that just delegates
 def compute_phi_M(
     x_G,
     Gauss_grain_id,
@@ -613,7 +608,6 @@ def compute_phi_M(
             )
 
 
-# @jit  # this is taking so long time, we are vectorizing this part
 def shape_grad_shape_func(
     x_G,
     x_nodes,
