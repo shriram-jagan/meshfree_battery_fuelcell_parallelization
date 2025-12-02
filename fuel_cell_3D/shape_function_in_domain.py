@@ -1,12 +1,4 @@
-import time
-
-start_time = time.time()
 import numpy as np
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csr_array
-from scipy.sparse.linalg import eigs, spsolve
 
 # Try to import the vectorized versions if available
 try:
@@ -544,7 +536,7 @@ def compute_phi_M(
     single_grain,
     M_P_z=None,
     use_vectorized=True,  # New parameter to control vectorization
-    dtype=np.float32,  # Data type for vectorized computations
+    dtype=np.float64,  # Data type for vectorized computations
 ):
     """Main compute_phi_M function that delegates to specialized functions based on conditions.
 
@@ -630,7 +622,7 @@ def shape_grad_shape_func(
     HT3=None,
     phi_P_z_nonzerovalue_data=None,
     use_vectorized=True,  # New parameter to control vectorization
-    dtype=np.float32,  # Data type for vectorized computations
+    dtype=np.float64,  # Data type for vectorized computations
 ):
     """Compute shape functions and their gradients.
 

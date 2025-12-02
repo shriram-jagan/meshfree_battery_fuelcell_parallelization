@@ -8,7 +8,7 @@ import numpy as np
 
 
 def compute_z_and_H_2d_vectorized(
-    x_G, x_nodes, a, H_scaling_factor, eps, dtype=np.float32
+    x_G, x_nodes, a, H_scaling_factor, eps, dtype=np.float64
 ):
     """Compute z values and H matrices for 2D case (vectorized).
 
@@ -49,7 +49,7 @@ def compute_z_and_H_2d_vectorized(
     z_P_y = diff[:, :, 1] / denom  # (n_gauss, n_nodes)
 
     # Free memory from distances
-    del distances
+    # del distances
 
     # Compute H matrices
     # H_T shape will be (n_gauss, n_nodes, 3)
@@ -59,7 +59,7 @@ def compute_z_and_H_2d_vectorized(
     H_T[:, :, 2] = diff[:, :, 1] / H_scaling_factor
 
     # Free memory from diff
-    del diff
+    # del diff
 
     # Derivatives of H_T
     HT_P_x = np.zeros((x_G.shape[0], x_nodes.shape[0], 3), dtype=dtype)
@@ -79,7 +79,7 @@ def compute_z_and_H_2d_vectorized(
 
 
 def compute_z_and_H_3d_vectorized(
-    x_G, x_nodes, a, H_scaling_factor, eps, dtype=np.float32
+    x_G, x_nodes, a, H_scaling_factor, eps, dtype=np.float64
 ):
     """Compute z values and H matrices for 3D case (vectorized).
 
@@ -201,7 +201,7 @@ def compute_phi_M_standard_vectorized(
     interface_nodes,
     BxByCxCy,
     M_P_z=None,
-    dtype=np.float32,
+    dtype=np.float64,
 ):
     """Vectorized version of compute_phi_M_standard.
 
@@ -286,7 +286,7 @@ def compute_phi_M_standard_vectorized(
 
     print(f"Before: Find nodes that contribute to a Gauss pt", flush=True)
     for i in range(n_gauss):
-        if i % 100 == 0:
+        if i % 10000 == 0:
             print(f"i: {i}")
         # Find nodes that contribute to this Gauss point
         node_mask = valid_mask[i, :]

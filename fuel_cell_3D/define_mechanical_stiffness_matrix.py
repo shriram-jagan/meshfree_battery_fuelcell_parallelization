@@ -1,12 +1,6 @@
-import time
-
 import numpy as np
 import scipy.sparse as sp
-from numba import jit
-from numpy import sign
-from numpy.linalg import eig, norm
-from scipy.sparse import bmat, csr_array
-from scipy.sparse.linalg import eigs, spsolve
+from scipy.sparse import bmat
 
 
 def mechanical_C_tensor_3d(
@@ -1319,24 +1313,6 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
             [K31_mechanical, K32_mechanical, K33_mechanical],
         ]
     )
-
-    ### sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T is sparse matrix, (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T*grad_shape_func_x is dot product of two sparse matrixs
-    # time1 = time.time()
-    # # remove the rigid body motion
-    # alpha = E/1000.0
-
-    # # calculate the eigenvalue and eigenvectors of K matrix
-    # EValue,EVector = eig(K_mechanical.toarray())
-    # time2 = time.time()
-    # print('eigen solving time: ', time2-time1)
-
-    # index_zero_EValue = np.argsort(EValue)[:3] # the index of the three zero eigen values in EValue,
-
-    # EVector1 = (np.array(EVector[:,index_zero_EValue[0]]).reshape(2*np.shape(x_nodes)[0],1))
-    # EVector2 = (np.array(EVector[:,index_zero_EValue[1]]).reshape(2*np.shape(x_nodes)[0],1))
-    # EVector3 = (np.array(EVector[:,index_zero_EValue[2]]).reshape(2*np.shape(x_nodes)[0],1))   # three eigenvectors corresponding to three zero eigenvalues
-
-    # K_mechanical = csr_array(K_mechanical+alpha*(np.dot(EVector1, EVector1.T)+np.dot(EVector2, EVector2.T)+np.dot(EVector3, EVector3.T)))
 
     return K_mechanical
 
