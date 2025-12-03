@@ -24,12 +24,9 @@ from get_nodes_gauss_points import (
     x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary,
     x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface,
 )
-from numba import jit, njit, typed
-from numpy import sign
-from numpy.linalg import eig, norm
 from read_image import read_in_image
-from scipy.sparse import block_diag, bmat, csr_array, vstack
-from scipy.sparse.linalg import eigs, inv, spsolve
+from scipy.sparse import block_diag, csr_array, vstack
+from scipy.sparse.linalg import spsolve
 from shape_function_in_domain import (
     compute_phi_M,
     shape_func_n_nodes_by_n_nodes,
@@ -4202,6 +4199,24 @@ if studied_physics == "fuel cell":
     print("on GP:", np.max(C_on_GP_electrode))
     print("on GP:", np.max(C_on_GP_pore))
 
+    if config.ENABLE_FILE_IO:
+        np.savetxt("svars_phi_on_nodes_electrolyte.txt", phi_on_nodes_electrolyte)
+        np.savetxt("svars_C_on_nodes_electrode.txt", C_on_nodes_electrode)
+        np.savetxt("svars_C_on_nodes_pore.txt", C_on_nodes_pore)
+        np.savetxt("svars_phi_on_GP_electrolyte.txt", phi_on_GP_electrolyte)
+        np.savetxt("svars_C_on_GP_electrode.txt", C_on_GP_electrode)
+        np.savetxt("svars_C_on_GP_pore.txt", C_on_GP_pore)
+
+        from scipy.sparse import save_npz
+
+        save_npz(
+            "shape_func_n_nodes_n_nodes_electrolyte.npz",
+            shape_func_n_nodes_n_nodes_electrolyte,
+        )
+        save_npz("shape_func_n_nodes_n_nodes_pore.npz", shape_func_n_nodes_n_nodes_pore)
+        save_npz("shape_func_electrolyte.npz", shape_func_electrolyte)
+        save_npz("shape_func_pore.npz", shape_func_pore)
+
     if dimension == 3:
 
         potential_on_nodes_save_electrolyte = np.zeros((num_nodes_electrolyte, 4))
@@ -4244,6 +4259,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Potential on Nodes - Electrolyte")
+            plt.savefig("figure_1.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_1.txt", potential_on_nodes_save_electrolyte)
 
             fig2 = plt.figure()
             ax = fig2.add_subplot(111, projection="3d")
@@ -4255,6 +4273,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Concentration on Nodes - Electrode")
+            plt.savefig("figure_2.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_2.txt", C_on_nodes_save_electrode)
 
             fig3 = plt.figure()
             ax = fig3.add_subplot(111, projection="3d")
@@ -4266,6 +4287,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Concentration on Nodes - Pore")
+            plt.savefig("figure_3.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_3.txt", C_on_nodes_save_pore)
 
             fig4 = plt.figure()
             ax = fig4.add_subplot(111, projection="3d")
@@ -4277,6 +4301,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Potential on GP - Electrolyte")
+            plt.savefig("figure_4.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_4.txt", potential_on_GP_save_electrolyte)
 
             fig5 = plt.figure()
             ax = fig5.add_subplot(111, projection="3d")
@@ -4288,6 +4315,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Concentration on GP - Electrode")
+            plt.savefig("figure_5.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_5.txt", C_on_GP_save_electrode)
 
             fig6 = plt.figure()
             ax = fig6.add_subplot(111, projection="3d")
@@ -4299,6 +4329,9 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Concentration on GP - Pore")
+            plt.savefig("figure_6.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_6.txt", C_on_GP_save_pore)
 
             fig7 = plt.figure()
             ax = fig7.add_subplot(111, projection="3d")
@@ -4310,6 +4343,10 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement ux")
+            plt.savefig("figure_7.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_7.txt", x_G_mechanical)
+                np.savetxt("figure_7_ux.txt", ux_gauss)
 
             fig8 = plt.figure()
             ax = fig8.add_subplot(111, projection="3d")
@@ -4321,6 +4358,10 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement uy")
+            plt.savefig("figure_8.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_8.txt", x_G_mechanical)
+                np.savetxt("figure_8_uy.txt", uy_gauss)
 
             fig9 = plt.figure()
             ax = fig9.add_subplot(111, projection="3d")
@@ -4332,6 +4373,10 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement uz")
+            plt.savefig("figure_9.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_9.txt", x_G_mechanical)
+                np.savetxt("figure_9_uz.txt", uz_gauss)
 
             fig10 = plt.figure()
             ax = fig10.add_subplot(111, projection="3d")
@@ -4343,6 +4388,13 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement ux")
+            plt.savefig("figure_10.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_10.txt", x_G_electrode)
+                np.savetxt(
+                    "figure_10_ux_electrolyte.txt",
+                    ux_gauss[num_gauss_points_in_domain_electrolyte:],
+                )
 
             fig11 = plt.figure()
             ax = fig11.add_subplot(111, projection="3d")
@@ -4354,6 +4406,13 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement uy")
+            plt.savefig("figure_11.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_11.txt", x_G_electrode)
+                np.savetxt(
+                    "figure_11_uy_electrolyte.txt",
+                    uy_gauss[num_gauss_points_in_domain_electrolyte:],
+                )
 
             fig12 = plt.figure()
             ax = fig12.add_subplot(111, projection="3d")
@@ -4365,6 +4424,13 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Displacement uz")
+            plt.savefig("figure_12.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_12.txt", x_G_electrode)
+                np.savetxt(
+                    "figure_12_uz_electrolyte.txt",
+                    uz_gauss[num_gauss_points_in_domain_electrolyte:],
+                )
 
             fig13 = plt.figure()
             ax = fig13.add_subplot(111, projection="3d")
@@ -4376,5 +4442,7 @@ if studied_physics == "fuel cell":
             )
             plt.colorbar(sc, ax=ax)
             plt.title("Damage Factor")
-
-            plt.show()
+            plt.savefig("figure_13.png")
+            if config.ENABLE_FILE_IO:
+                np.savetxt("figure_13.txt", x_G_mechanical)
+                np.savetxt("figure_13_D_damage.txt", D_damage)
