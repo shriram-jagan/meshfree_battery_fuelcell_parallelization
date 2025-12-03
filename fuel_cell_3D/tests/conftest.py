@@ -7,9 +7,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-import numpy as np
+sys.path.insert(0, "..")
 import pytest
 import tifffile
+from common import np
 
 # Add the parent directory to the Python path to import fuel_cell modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

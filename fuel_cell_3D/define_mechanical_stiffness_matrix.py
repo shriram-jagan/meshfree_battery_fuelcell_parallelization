@@ -1,6 +1,4 @@
-import numpy as np
-import scipy.sparse as sp
-from scipy.sparse import bmat
+from common import np, sp
 
 
 def mechanical_C_tensor_3d(
@@ -1306,13 +1304,36 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
     )  # + K32_mechanical_boundary_int #
     K33_mechanical = K33_mechanical_doamin_int + K33_mechanical_line_int
 
-    K_mechanical = bmat(
-        [
-            [K11_mechanical, K12_mechanical, K13_mechanical],
-            [K21_mechanical, K22_mechanical, K23_mechanical],
-            [K31_mechanical, K32_mechanical, K33_mechanical],
-        ]
-    )
+    if config.USE_NUMPY_EQUIVALENTS:
+        K_mechanical = csr_array(
+            np.block(
+                [
+                    [
+                        K11_mechanical.toarray(),
+                        K12_mechanical.toarray(),
+                        K13_mechanical.toarray(),
+                    ],
+                    [
+                        K21_mechanical.toarray(),
+                        K22_mechanical.toarray(),
+                        K23_mechanical.toarray(),
+                    ],
+                    [
+                        K31_mechanical.toarray(),
+                        K32_mechanical.toarray(),
+                        K33_mechanical.toarray(),
+                    ],
+                ]
+            )
+        )
+    else:
+        K_mechanical = bmat(
+            [
+                [K11_mechanical, K12_mechanical, K13_mechanical],
+                [K21_mechanical, K22_mechanical, K23_mechanical],
+                [K31_mechanical, K32_mechanical, K33_mechanical],
+            ]
+        )
 
     return K_mechanical
 

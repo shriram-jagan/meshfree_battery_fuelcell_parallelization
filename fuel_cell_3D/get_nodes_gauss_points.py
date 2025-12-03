@@ -1,5 +1,4 @@
-import numpy as np
-from numba import jit
+from common import np
 
 
 def get_x_nodes_fuel_cell_3d_toy_image(
@@ -2547,66 +2546,144 @@ def x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(
     return x_G, det_J_time_weight
 
 
-# 3D dmain, 1d line boundary
-@jit
+# 3D domain, 1d line boundary - Fully Vectorized version
 def x_G_and_det_J_line_3d_fuelcell_1d_boundary(
     segments_source, x_G_line, weight_G_line
 ):
+    """
+    Fully vectorized computation of Gauss points and Jacobian determinants for 1D line boundaries
+    in a 3D fuel cell domain.
 
-    x_G_b_line = []
-    det_J_b_time_weight_line = []  # determin of jacobian
+    Parameters:
+    -----------
+    segments_source : np.ndarray or list
+        Array of shape (n, 6) containing segment endpoints [x1, y1, z1, x2, y2, z2]
+    x_G_line : np.ndarray or list
+        Gauss points in reference coordinates
+    weight_G_line : np.ndarray or list
+        Gauss weights
 
-    for i in range(np.shape(segments_source)[0]):
-        x_ver1 = segments_source[i, 0]
-        y_ver1 = segments_source[i, 1]
-        z_ver1 = segments_source[i, 2]
-        x_ver2 = segments_source[i, 3]
-        y_ver2 = segments_source[i, 4]
-        z_ver2 = segments_source[i, 5]
+    Returns:
+    --------
+    x_G_b_line : np.ndarray
+        Array of shape (m, 3) containing [x, y, z] coordinates for Gauss points
+    det_J_b_time_weight_line : np.ndarray
+        Array of shape (m,) containing Jacobian determinants times weights
+    """
 
-        if x_ver1 == x_ver2 and z_ver1 == z_ver2:
-            y_ver_b = np.array([y_ver1, y_ver2])
+    # Convert inputs to numpy arrays if they're lists
+    segments_source = np.array(segments_source)
+    x_G_line = np.array(x_G_line)
+    weight_G_line = np.array(weight_G_line)
 
-            for k in range(len(x_G_line)):
-                y_G_ij_k = (y_ver_b[1] - y_ver_b[0]) / 2 * x_G_line[k] + (
-                    y_ver_b[1] + y_ver_b[0]
-                ) / 2
-                z_G_ij_k = z_ver1
-                x_G_ij_k = x_ver1
-                x_G_b_line.append([x_G_ij_k, y_G_ij_k, z_G_ij_k])
+    if segments_source.shape[0] == 0:
+        return np.array([]).reshape(0, 3), np.array([])
 
-                det_J_b_time_weight_line.append(
-                    (y_ver_b[1] - y_ver_b[0]) / 2 * weight_G_line[k]
-                )
+    # Extract vertices
+    x_ver1 = segments_source[:, 0]
+    y_ver1 = segments_source[:, 1]
+    z_ver1 = segments_source[:, 2]
+    x_ver2 = segments_source[:, 3]
+    y_ver2 = segments_source[:, 4]
+    z_ver2 = segments_source[:, 5]
 
-        if x_ver1 == x_ver2 and y_ver1 == y_ver2:  # right boundary
-            z_ver_b = np.array([z_ver1, z_ver2])
+    # Identify segment types
+    y_aligned = (x_ver1 == x_ver2) & (z_ver1 == z_ver2)
+    z_aligned = (x_ver1 == x_ver2) & (y_ver1 == y_ver2)
+    x_aligned = (z_ver1 == z_ver2) & (y_ver1 == y_ver2)
 
-            for k in range(len(x_G_line)):
-                x_G_ij_k = x_ver1
-                y_G_ij_k = y_ver1
-                z_G_ij_k = (z_ver_b[1] - z_ver_b[0]) / 2 * x_G_line[k] + (
-                    z_ver_b[1] + z_ver_b[0]
-                ) / 2
-                x_G_b_line.append([x_G_ij_k, y_G_ij_k, z_G_ij_k])
+    n_gauss = len(x_G_line)
 
-                det_J_b_time_weight_line.append(
-                    (z_ver_b[1] - z_ver_b[0]) / 2 * weight_G_line[k]
-                )
+    all_points = []
+    all_weights = []
 
-        if z_ver1 == z_ver2 and y_ver1 == y_ver2:  # right boundary
-            x_ver_b = np.array([x_ver1, x_ver2])
+    if np.any(y_aligned):
+        y_idx = np.where(y_aligned)[0]
+        n_segs = len(y_idx)
 
-            for k in range(len(x_G_line)):
-                z_G_ij_k = z_ver1
-                y_G_ij_k = y_ver1
-                x_G_ij_k = (x_ver_b[1] - x_ver_b[0]) / 2 * x_G_line[k] + (
-                    x_ver_b[1] + x_ver_b[0]
-                ) / 2
-                x_G_b_line.append([x_G_ij_k, y_G_ij_k, z_G_ij_k])
+        # Use broadcasting to compute all Gauss points for all segments at once
+        # Shape: (n_segments, n_gauss)
+        y_G = (y_ver2[y_idx] - y_ver1[y_idx])[:, np.newaxis] / 2 * x_G_line[
+            np.newaxis, :
+        ] + (y_ver2[y_idx] + y_ver1[y_idx])[:, np.newaxis] / 2
 
-                det_J_b_time_weight_line.append(
-                    (x_ver_b[1] - x_ver_b[0]) / 2 * weight_G_line[k]
-                )
+        # Expand fixed coordinates
+        x_G = x_ver1[y_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+        z_G = z_ver1[y_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+
+        # Stack and reshape to (n_segments * n_gauss, 3)
+        points_y = np.stack([x_G.ravel(), y_G.ravel(), z_G.ravel()], axis=1)
+
+        # Compute weights
+        weights_y = (
+            np.abs(y_ver2[y_idx] - y_ver1[y_idx])[:, np.newaxis]
+            / 2
+            * weight_G_line[np.newaxis, :]
+        ).ravel()
+
+        all_points.append(points_y)
+        all_weights.append(weights_y)
+
+    # Process z-aligned segments (varying z, fixed x and y) - fully vectorized
+    if np.any(z_aligned):
+        z_idx = np.where(z_aligned)[0]
+        n_segs = len(z_idx)
+
+        # Use broadcasting to compute all Gauss points for all segments at once
+        z_G = (z_ver2[z_idx] - z_ver1[z_idx])[:, np.newaxis] / 2 * x_G_line[
+            np.newaxis, :
+        ] + (z_ver2[z_idx] + z_ver1[z_idx])[:, np.newaxis] / 2
+
+        # Expand fixed coordinates
+        x_G = x_ver1[z_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+        y_G = y_ver1[z_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+
+        # Stack and reshape to (n_segments * n_gauss, 3)
+        points_z = np.stack([x_G.ravel(), y_G.ravel(), z_G.ravel()], axis=1)
+
+        # Compute weights
+        weights_z = (
+            np.abs(z_ver2[z_idx] - z_ver1[z_idx])[:, np.newaxis]
+            / 2
+            * weight_G_line[np.newaxis, :]
+        ).ravel()
+
+        all_points.append(points_z)
+        all_weights.append(weights_z)
+
+    # Process x-aligned segments (varying x, fixed y and z) - fully vectorized
+    if np.any(x_aligned):
+        x_idx = np.where(x_aligned)[0]
+        n_segs = len(x_idx)
+
+        # Use broadcasting to compute all Gauss points for all segments at once
+        x_G = (x_ver2[x_idx] - x_ver1[x_idx])[:, np.newaxis] / 2 * x_G_line[
+            np.newaxis, :
+        ] + (x_ver2[x_idx] + x_ver1[x_idx])[:, np.newaxis] / 2
+
+        # Expand fixed coordinates
+        y_G = y_ver1[x_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+        z_G = z_ver1[x_idx][:, np.newaxis].repeat(n_gauss, axis=1)
+
+        # Stack and reshape to (n_segments * n_gauss, 3)
+        points_x = np.stack([x_G.ravel(), y_G.ravel(), z_G.ravel()], axis=1)
+
+        # Compute weights
+        weights_x = (
+            np.abs(x_ver2[x_idx] - x_ver1[x_idx])[:, np.newaxis]
+            / 2
+            * weight_G_line[np.newaxis, :]
+        ).ravel()
+
+        all_points.append(points_x)
+        all_weights.append(weights_x)
+
+    # Concatenate all results
+    if all_points:
+        x_G_b_line = np.vstack(all_points)
+        det_J_b_time_weight_line = np.concatenate(all_weights)
+    else:
+        x_G_b_line = np.array([]).reshape(0, 3)
+        det_J_b_time_weight_line = np.array([])
 
     return x_G_b_line, det_J_b_time_weight_line

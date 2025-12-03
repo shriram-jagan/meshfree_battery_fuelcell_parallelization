@@ -1,13 +1,14 @@
-import time
+from common import time as time
 
 start_time = time.time()
 import config
-import numpy as np
+from common import np, sp
 
 # Only import matplotlib if plotting is enabled
 if config.ENABLE_PLOTTING:
     import matplotlib.pyplot as plt
-import scipy.sparse as sp
+
+from common import csr_array, spsolve
 from define_diffusion_matrix_form import (
     diffusion_matrix_fuel_cell,
     diffusion_matrix_fuel_cell_distributed_point_source,
@@ -25,8 +26,6 @@ from get_nodes_gauss_points import (
     x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface,
 )
 from read_image import read_in_image
-from scipy.sparse import block_diag, csr_array, vstack
-from scipy.sparse.linalg import spsolve
 from shape_function_in_domain import (
     compute_phi_M,
     shape_func_n_nodes_by_n_nodes,
@@ -466,9 +465,9 @@ if integral_method == "gauss":
                     segments_source_coords, x_G_line, weight_G_line
                 )
             )
-            x_G_b_line = np.array(x_G_b_line)
+            # x_G_b_line is now already a NumPy array from the function
             num_source_line_gauss_points = np.shape(x_G_b_line)[0]
-            det_J_b_time_weight_line = np.array(det_J_b_time_weight_line)
+            # det_J_b_time_weight_line is now already a NumPy array from the function
 
             x_G_b_fixed, det_J_b_time_weight_fixed = (
                 x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary(
@@ -982,7 +981,6 @@ if dimension == 3:
 
 print(f"Done with shape grad func computation!", flush=True)
 
-# numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
 shape_func_electrolyte = csr_array(
     (
         np.array(shape_func_value_electrolyte),
@@ -3150,7 +3148,6 @@ if dimension == 3:
         phi_nonzero_index_column_electrolyte_line_nodes,
     )
 
-    # numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
     shape_func_line_n_nodes_electrolyte = csr_array(
         (
             np.array(shape_func_value_electrolyte_line_nodes),
@@ -3237,7 +3234,6 @@ if dimension == 3:
         phi_nonzero_index_column_electrode_line_nodes,
     )
 
-    # numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
     shape_func_line_n_nodes_electrode = csr_array(
         (
             np.array(shape_func_value_electrode_line_nodes),
@@ -3321,7 +3317,6 @@ if dimension == 3:
         phi_nonzero_index_column_pore_line_nodes,
     )
 
-    # numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
     shape_func_line_n_nodes_pore = csr_array(
         (
             np.array(shape_func_value_pore_line_nodes),
@@ -3424,7 +3419,6 @@ if dimension == 3:
         phi_P_z_nonzerovalue_data_fixed_nodes,
     )
 
-    # numba doesn't support csr_array, so get all these parameters and construct csr_array out of numba
     shape_func_fixed_point = csr_array(
         (
             np.array(shape_func_value_fixed_point),
@@ -3731,6 +3725,8 @@ if studied_physics == "fuel cell":
                     )
                 )
             else:
+                from common import vstack
+
                 shape_func_interface_electrode = vstack(
                     (
                         shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode,
@@ -3813,6 +3809,8 @@ if studied_physics == "fuel cell":
                     np.block([[Ke, Z_ec, Z_ep], [Z_ce, Kc, Z_cp], [Z_pe, Z_pc, Kp]])
                 )
             else:
+                from common import block_diag
+
                 K = block_diag((K_electrolyte, K_electrode, K_pore), format="csr")
 
             f = np.concatenate((f_electrolyte, f_electrode, f_pore))

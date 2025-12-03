@@ -2,9 +2,13 @@
 Unit tests for the config module.
 """
 
+import sys
+
 import config
-import numpy as np
+
+sys.path.insert(0, "..")
 import pytest
+from common import np
 
 
 class TestConfig:

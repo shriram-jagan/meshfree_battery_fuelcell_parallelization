@@ -4,7 +4,7 @@ This module provides vectorized implementations that operate on all Gauss points
 and nodes simultaneously, eliminating the need for explicit loops.
 """
 
-import numpy as np
+from common import np
 
 
 def compute_z_and_H_2d_vectorized(

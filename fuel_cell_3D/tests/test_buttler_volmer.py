@@ -2,8 +2,11 @@
 Unit tests for the Butler-Volmer equations module.
 """
 
-import numpy as np
+import sys
+
+sys.path.insert(0, "..")
 import pytest
+from common import np
 from define_buttler_volmer import (
     Dn_complex,
     alpha_lattice_complex,

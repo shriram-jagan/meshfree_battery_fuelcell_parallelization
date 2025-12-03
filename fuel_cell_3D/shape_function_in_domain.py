@@ -1,4 +1,4 @@
-import numpy as np
+from common import np
 
 # Try to import the vectorized versions if available
 try:

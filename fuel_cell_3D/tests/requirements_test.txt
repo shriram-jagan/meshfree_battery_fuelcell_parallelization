@@ -8,7 +8,6 @@ pytest-timeout>=2.1.0
 # Core dependencies (should match main requirements)
 numpy>=1.20.0
 scipy>=1.7.0
-numba>=0.56.0
 tifffile>=2022.0.0
 matplotlib>=3.5.0
 
