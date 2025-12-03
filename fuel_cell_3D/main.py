@@ -3724,7 +3724,7 @@ if studied_physics == "fuel cell":
                     shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode,
                     shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode,
                 ),
-                format="csc",
+                format="csr",
             )
 
             K_electrode, f_electrode = diffusion_matrix_fuel_cell(
@@ -3777,7 +3777,7 @@ if studied_physics == "fuel cell":
                 normal_vector_z_pore,
             )
 
-            K = block_diag((K_electrolyte, K_electrode, K_pore), format="csc")
+            K = block_diag((K_electrolyte, K_electrode, K_pore), format="csr")
             f = np.concatenate((f_electrolyte, f_electrode, f_pore))
 
             results_new = spsolve(K, f)
