@@ -206,3 +206,11 @@ WEIGHT_G_LINE = np.array(
         0.5 - 30**0.5 / 36,
     ]
 )  # Weights for 1D line
+
+# ======================
+# PERFORMANCE RELATED
+# ======================
+
+# Allow using NumPy APIs for APIs that are not supported by legate-sparse
+# e.g., vstack, block_diag, block_array etc
+USE_NUMPY_EQUIVALENTS = True

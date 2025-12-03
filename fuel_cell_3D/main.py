@@ -3719,13 +3719,25 @@ if studied_physics == "fuel cell":
                     interface_source_electrode_pore_electrode,
                 )
             )
-            shape_func_interface_electrode = vstack(
-                (
-                    shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode,
-                    shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode,
-                ),
-                format="csr",
-            )
+
+            if config.USE_NUMPY_EQUIVALENTS:
+                print(f"Using np.vstack instead of scipy.sparse.vstack")
+                shape_func_interface_electrode = csr_array(
+                    np.vstack(
+                        [
+                            shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode.toarray(),
+                            shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode.toarray(),
+                        ]
+                    )
+                )
+            else:
+                shape_func_interface_electrode = vstack(
+                    (
+                        shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode,
+                        shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode,
+                    ),
+                    format="csr",
+                )
 
             K_electrode, f_electrode = diffusion_matrix_fuel_cell(
                 dimension,
@@ -3777,7 +3789,32 @@ if studied_physics == "fuel cell":
                 normal_vector_z_pore,
             )
 
-            K = block_diag((K_electrolyte, K_electrode, K_pore), format="csr")
+            if config.USE_NUMPY_EQUIVALENTS:
+                print(f"Using np.block instead of scipy.sparse.block_diag")
+                # K = block_diag((K_electrolyte, K_electrode, K_pore), format='csc')
+                # K = np.block([
+                #             [K_electrolyte.toarray(),        np.zeros_like(K_electrode.toarray()), np.zeros_like(K_pore.toarray())],
+                #             [np.zeros_like(K_electrolyte.toarray()), K_electrode.toarray(),        np.zeros_like(K_pore.toarray())],
+                #             [np.zeros_like(K_electrolyte.toarray()), np.zeros_like(K_electrode.toarray()), K_pore.toarray()]
+                #             ])
+                Ke = K_electrolyte.toarray()
+                Kc = K_electrode.toarray()
+                Kp = K_pore.toarray()
+
+                # build zero blocks with *correct shapes*
+                Z_ec = np.zeros((Ke.shape[0], Kc.shape[1]))
+                Z_ep = np.zeros((Ke.shape[0], Kp.shape[1]))
+                Z_ce = np.zeros((Kc.shape[0], Ke.shape[1]))
+                Z_cp = np.zeros((Kc.shape[0], Kp.shape[1]))
+                Z_pe = np.zeros((Kp.shape[0], Ke.shape[1]))
+                Z_pc = np.zeros((Kp.shape[0], Kc.shape[1]))
+
+                K = csr_matrix(
+                    np.block([[Ke, Z_ec, Z_ep], [Z_ce, Kc, Z_cp], [Z_pe, Z_pc, Kp]])
+                )
+            else:
+                K = block_diag((K_electrolyte, K_electrode, K_pore), format="csr")
+
             f = np.concatenate((f_electrolyte, f_electrode, f_pore))
 
             results_new = spsolve(K, f)
