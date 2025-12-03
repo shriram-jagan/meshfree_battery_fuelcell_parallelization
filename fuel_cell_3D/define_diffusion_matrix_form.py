@@ -1,4 +1,4 @@
-import numpy as np
+from common import np
 
 
 def diffusion_matrix_fuel_cell(

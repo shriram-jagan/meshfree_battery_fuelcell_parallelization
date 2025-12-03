@@ -4,7 +4,8 @@ Contains all configuration parameters including domain dimensions,
 physical constants, material properties, and simulation settings.
 """
 
-import numpy as np
+# Import NumPy from common.py
+from common import np
 
 # ==============================================================================
 # GEOMETRY AND ANALYSIS SETTINGS
@@ -213,4 +214,5 @@ WEIGHT_G_LINE = np.array(
 
 # Allow using NumPy APIs for APIs that are not supported by legate-sparse
 # e.g., vstack, block_diag, block_array etc
+# NOTE: THIS HAS TO BE TRUE if we want to use legate
 USE_NUMPY_EQUIVALENTS = True

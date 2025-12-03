@@ -2,8 +2,11 @@
 Unit tests for the read_image module.
 """
 
-import numpy as np
+import sys
+
+sys.path.insert(0, "..")
 import pytest
+from common import np
 from read_image import read_in_image
 
 

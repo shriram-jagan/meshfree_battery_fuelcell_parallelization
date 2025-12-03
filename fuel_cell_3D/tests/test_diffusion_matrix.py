@@ -2,9 +2,12 @@
 Unit tests for the diffusion matrix module.
 """
 
-import numpy as np
+import sys
+
 import pytest
-import scipy.sparse as sp
+
+sys.path.insert(0, "..")
+from common import np, sp
 from define_diffusion_matrix_form import (
     diffusion_matrix_fuel_cell,
     diffusion_matrix_fuel_cell_distributed_point_source,

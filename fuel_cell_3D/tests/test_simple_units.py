@@ -2,9 +2,13 @@
 Simplified unit tests focusing on testable components without complex dependencies.
 """
 
+import sys
+
 import config
-import numpy as np
+
+sys.path.insert(0, "..")
 import pytest
+from common import np
 from define_buttler_volmer import (
     Dn_complex,
     alpha_lattice_complex,

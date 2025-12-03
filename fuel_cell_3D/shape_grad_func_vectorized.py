@@ -4,7 +4,7 @@ This module provides vectorized implementations for computing shape functions
 and their gradients, with optimized batch matrix operations.
 """
 
-import numpy as np
+from common import np
 
 
 def compute_H_matrices_sparse_2d(

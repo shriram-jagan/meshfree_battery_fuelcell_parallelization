@@ -5,9 +5,10 @@ Integration tests for the fuel cell 3D simulation workflow.
 import os
 import sys
 
-import numpy as np
 import pytest
-import scipy.sparse as sp
+
+sys.path.insert(0, "..")
+from common import np, sp
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
