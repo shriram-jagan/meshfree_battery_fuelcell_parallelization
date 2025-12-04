@@ -2,11 +2,16 @@ from common import np
 
 # Try to import the vectorized versions if available
 try:
-    from shape_function_vectorized import compute_phi_M_standard_vectorized
+    from shape_function_vectorized import (
+        compute_phi_M_standard_sparse,
+        compute_phi_M_standard_vectorized,
+    )
 
     VECTORIZED_PHI_AVAILABLE = True
+    SPARSE_PHI_AVAILABLE = True
 except ImportError:
     VECTORIZED_PHI_AVAILABLE = False
+    SPARSE_PHI_AVAILABLE = False
 
 try:
     from shape_grad_func_vectorized import shape_grad_shape_func_vectorized
@@ -14,6 +19,13 @@ try:
     VECTORIZED_GRAD_AVAILABLE = True
 except ImportError:
     VECTORIZED_GRAD_AVAILABLE = False
+
+try:
+    from shape_func_vectorized import shape_func_n_nodes_by_n_nodes_vectorized
+
+    VECTORIZED_SHAPE_FUNC_AVAILABLE = True
+except ImportError:
+    VECTORIZED_SHAPE_FUNC_AVAILABLE = False
 
 # Keep old name for compatibility
 VECTORIZED_AVAILABLE = VECTORIZED_PHI_AVAILABLE
@@ -565,10 +577,10 @@ def compute_phi_M(
             M_P_z,
         )
     else:
-        # Use standard method - with optional vectorization
-        if use_vectorized and VECTORIZED_AVAILABLE:
-            print(f"using vectorized phi_m_standard with dtype={dtype}", flush=True)
-            return compute_phi_M_standard_vectorized(
+        # Use standard method - with sparse optimization if available
+        if use_vectorized and SPARSE_PHI_AVAILABLE:
+            print(f"using SPARSE phi_m_standard with dtype={dtype}", flush=True)
+            return compute_phi_M_standard_sparse(
                 x_G,
                 Gauss_grain_id,
                 x_nodes,
@@ -940,7 +952,39 @@ def shape_func_n_nodes_by_n_nodes(
     phi_nonzerovalue_data,
     phi_nonzero_index_row,
     phi_nonzero_index_column,
+    use_vectorized=True,
 ):
+    """Compute shape functions for non-zero phi values.
+
+    Args:
+        x_G: Gauss points
+        x_nodes: Node points
+        num_non_zero_phi_a: Number of non-zero phi values
+        HT0: Initial H transpose matrix
+        M: Moment matrices
+        phi_nonzerovalue_data: Non-zero phi values
+        phi_nonzero_index_row: Row indices for non-zero phi
+        phi_nonzero_index_column: Column indices for non-zero phi
+        use_vectorized: Whether to use vectorized implementation if available
+
+    Returns:
+        List of shape function values
+    """
+    # Use vectorized version if available and requested
+    if use_vectorized and VECTORIZED_SHAPE_FUNC_AVAILABLE:
+        print(f"Using vectorized shapte function", flush=True)
+        return shape_func_n_nodes_by_n_nodes_vectorized(
+            x_G,
+            x_nodes,
+            num_non_zero_phi_a,
+            HT0,
+            M,
+            phi_nonzerovalue_data,
+            phi_nonzero_index_row,
+            phi_nonzero_index_column,
+        )
+
+    # Fall back to original implementation
     shape_func_value = []
 
     for ii in range(num_non_zero_phi_a):
@@ -988,4 +1032,100 @@ def shape_func_n_nodes_by_n_nodes(
 
         shape_func_value.append(shape_func_ij)
 
+    return shape_func_value
+
+
+def shape_func_n_nodes_by_n_nodes_vectorized(
+    x_G,
+    x_nodes,
+    num_non_zero_phi_a,
+    HT0,
+    M,
+    phi_nonzerovalue_data,
+    phi_nonzero_index_row,
+    phi_nonzero_index_column,
+):
+    """Vectorized computation of shape functions for non-zero phi values.
+
+    Args:
+        x_G: Gauss points array (n_gauss, dim)
+        x_nodes: Node points array (n_nodes, dim)
+        num_non_zero_phi_a: Number of non-zero phi values
+        HT0: Initial H transpose matrix
+        M: Moment matrices (n_gauss, basis_size, basis_size)
+        phi_nonzerovalue_data: Non-zero phi values
+        phi_nonzero_index_row: Row indices for non-zero phi
+        phi_nonzero_index_column: Column indices for non-zero phi
+
+    Returns:
+        numpy.ndarray: Array of shape function values of shape (num_non_zero_phi_a,)
+    """
+    # Convert indices to integer arrays
+    row_indices = phi_nonzero_index_row[:num_non_zero_phi_a].astype(int)
+    col_indices = phi_nonzero_index_column[:num_non_zero_phi_a].astype(int)
+
+    # Get relevant points
+    x_G_sparse = x_G[row_indices]  # (num_non_zero, dim)
+    x_nodes_sparse = x_nodes[col_indices]  # (num_non_zero, dim)
+
+    # Compute differences
+    diff = x_G_sparse - x_nodes_sparse  # (num_non_zero, dim)
+
+    # Determine dimension and basis size
+    dim = x_G.shape[1] if len(x_G.shape) > 1 else 1
+    basis_size = M.shape[1]
+
+    H_scaling_factor = 1.0e-6
+
+    # Build H_T matrices based on dimension
+    if basis_size == 3:  # 2D case
+        # H_T shape: (num_non_zero, 3)
+        H_T = np.zeros((num_non_zero_phi_a, 3), dtype=np.float64)
+        H_T[:, 0] = 1.0
+        H_T[:, 1] = diff[:, 0] / H_scaling_factor
+        H_T[:, 2] = diff[:, 1] / H_scaling_factor
+    elif basis_size == 4:  # 3D case
+        # H_T shape: (num_non_zero, 4)
+        H_T = np.zeros((num_non_zero_phi_a, 4), dtype=np.float64)
+        H_T[:, 0] = 1.0
+        H_T[:, 1] = diff[:, 0] / H_scaling_factor
+        H_T[:, 2] = diff[:, 1] / H_scaling_factor
+        H_T[:, 3] = diff[:, 2] / H_scaling_factor
+    else:
+        raise ValueError(f"Unsupported basis size: {basis_size}")
+
+    # In the original code, H = np.transpose(H_T) where H_T is a 1D array
+    # This doesn't change the shape for 1D arrays in numpy
+    # We need H to be shape (num_non_zero, basis_size) for vectorized dot product
+    H = H_T  # Keep as (num_non_zero, basis_size)
+
+    # Get relevant M matrices and compute inverses
+    M_sparse = M[row_indices]  # (num_non_zero, basis_size, basis_size)
+
+    # Compute M inverses for all relevant matrices at once
+    M_inv = np.linalg.inv(
+        M_sparse.astype(np.float64)
+    )  # (num_non_zero, basis_size, basis_size)
+
+    # Compute shape function values using einsum for efficiency
+    # HT0 is (1, basis_size), M_inv is (num_non_zero, basis_size, basis_size)
+    # H is (num_non_zero, basis_size)
+
+    # First compute HT0 @ M_inv for each matrix
+    # Result shape: (num_non_zero, 1, basis_size)
+    HT0_M_inv = np.matmul(HT0[np.newaxis, :, :], M_inv)
+
+    # Then compute (HT0 @ M_inv) @ H for each pair
+    # We need to do element-wise dot product of HT0_M_inv and H
+    # HT0_M_inv is (num_non_zero, 1, basis_size), H is (num_non_zero, basis_size)
+    # Use einsum for clarity: 'nib,nb->n'
+    shape_func_base = np.einsum("nib,nb->n", HT0_M_inv, H)
+
+    # Get relevant phi values
+    phi_values = phi_nonzerovalue_data[:num_non_zero_phi_a]
+
+    # Compute final shape function values
+    shape_func_value = shape_func_base * phi_values
+
+    # Return the numpy array directly - no conversion needed
     return shape_func_value

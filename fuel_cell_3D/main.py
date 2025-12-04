@@ -3809,7 +3809,7 @@ if studied_physics == "fuel cell":
             results_new = spsolve(K, f)
 
             diff = np.linalg.norm(results_new - results_old, 2)
-            results_old[:] = results_new.copy()
+            results_old[:] = results_new
 
             iteration_num += 1
 
