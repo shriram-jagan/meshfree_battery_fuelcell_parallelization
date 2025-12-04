@@ -2571,6 +2571,8 @@ def x_G_and_det_J_line_3d_fuelcell_1d_boundary(
         Array of shape (m,) containing Jacobian determinants times weights
     """
 
+    print(f"begin: x_G_and_det_J_line_3d_fuelcell_1d_boundary", flush=True)
+
     # Convert inputs to numpy arrays if they're lists
     segments_source = np.array(segments_source)
     x_G_line = np.array(x_G_line)
@@ -2685,5 +2687,7 @@ def x_G_and_det_J_line_3d_fuelcell_1d_boundary(
     else:
         x_G_b_line = np.array([]).reshape(0, 3)
         det_J_b_time_weight_line = np.array([])
+
+    print(f"end  :x_G_and_det_J_line_3d_fuelcell_1d_boundary", flush=True)
 
     return x_G_b_line, det_J_b_time_weight_line

@@ -161,6 +161,8 @@ def shape_grad_shape_func_vectorized(
         dtype: Data type for computations (np.float32 or np.float64)
     """
 
+    print(f"begin: shape_grad_shape_func_vectorized", flush=True)
+
     # Convert to numpy arrays if needed - handle lists of floats
     # First convert to float to handle any numeric type, then to int
     try:
@@ -342,6 +344,8 @@ def shape_grad_shape_func_vectorized(
         )
     else:
         grad_shape_func_z_times_det_J_time_weight_value = []
+
+    print(f"  end: shape_grad_shape_func_vectorized", flush=True)
 
     # Convert to lists for compatibility
     return (

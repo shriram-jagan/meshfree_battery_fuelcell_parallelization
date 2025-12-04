@@ -35,7 +35,7 @@ def compute_phi_M_with_interface_method(
 ):
     """Compute phi_M using interface method (IM_RKPM=True and single_grain=False)."""
 
-    print(f"Compute phi_M using interface method")
+    print(f"Compute phi_M using interface method", flush=True)
 
     if M_P_z is None:
         # Initialize with zeros or correct shape
@@ -53,7 +53,7 @@ def compute_phi_M_with_interface_method(
     z_P_z = []
     phipz = []
 
-    print("get in")
+    print("get in", flush=True)
     for i in range(np.shape(x_G)[0]):
         """
         check the distance between point and segments, exact distance
@@ -567,7 +567,7 @@ def compute_phi_M(
     else:
         # Use standard method - with optional vectorization
         if use_vectorized and VECTORIZED_AVAILABLE:
-            print(f"using vectorized phi_m_standard with dtype={dtype}")
+            print(f"using vectorized phi_m_standard with dtype={dtype}", flush=True)
             return compute_phi_M_standard_vectorized(
                 x_G,
                 Gauss_grain_id,
@@ -635,7 +635,7 @@ def shape_grad_shape_func(
 
     # Use vectorized version if available and requested
     if use_vectorized and VECTORIZED_GRAD_AVAILABLE:
-        print(f"using vectorized shape_grad_shape_func with dtype={dtype}")
+        print(f"using vectorized shape_grad_shape_func with dtype={dtype}", flush=True)
         return shape_grad_shape_func_vectorized(
             x_G,
             x_nodes,
@@ -898,7 +898,7 @@ def shape_grad_shape_func(
                     )
 
             else:
-                print("differential method is not defined")
+                print("differential method is not defined", flush=True)
         shape_func_value.append(shape_func_ij)
         grad_shape_func_x_value.append(grad_shape_func_x_ij)
         grad_shape_func_y_value.append(grad_shape_func_y_ij)
