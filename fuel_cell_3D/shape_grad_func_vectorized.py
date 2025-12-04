@@ -23,6 +23,8 @@ def compute_H_matrices_sparse_2d(
     Returns:
         H_T, HT_P_x, HT_P_y, H, H_P_x, H_P_y for all sparse pairs
     """
+    print(f"begin: compute_H_matrices_sparse_2d", flush=True)
+
     n_pairs = len(gauss_indices)
 
     # Get relevant points
@@ -50,6 +52,8 @@ def compute_H_matrices_sparse_2d(
     H_P_x = HT_P_x.copy()
     H_P_y = HT_P_y.copy()
 
+    print(f"  end: compute_H_matrices_sparse_2d", flush=True)
+
     return H_T, HT_P_x, HT_P_y, H, H_P_x, H_P_y
 
 
@@ -69,6 +73,8 @@ def compute_H_matrices_sparse_3d(
     Returns:
         H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z for all sparse pairs
     """
+    print(f"begin: compute_H_matrices_sparse_3d", flush=True)
+
     n_pairs = len(gauss_indices)
 
     # Get relevant points
@@ -100,6 +106,8 @@ def compute_H_matrices_sparse_3d(
     H_P_x = HT_P_x.copy()
     H_P_y = HT_P_y.copy()
     H_P_z = HT_P_z.copy()
+
+    print(f"  end: compute_H_matrices_sparse_3d", flush=True)
 
     return H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z
 
@@ -347,14 +355,14 @@ def shape_grad_shape_func_vectorized(
 
     print(f"  end: shape_grad_shape_func_vectorized", flush=True)
 
-    # Convert to lists for compatibility
+    # Return as numpy arrays for efficiency
     return (
-        shape_func_value.tolist(),
-        shape_func_times_det_J_time_weight_value.tolist(),
-        grad_shape_func_x_value.tolist(),
-        grad_shape_func_y_value.tolist(),
-        grad_shape_func_z_value.tolist() if is_3d else [],
-        grad_shape_func_x_times_det_J_time_weight_value.tolist(),
-        grad_shape_func_y_times_det_J_time_weight_value.tolist(),
-        grad_shape_func_z_times_det_J_time_weight_value.tolist() if is_3d else [],
+        shape_func_value,
+        shape_func_times_det_J_time_weight_value,
+        grad_shape_func_x_value,
+        grad_shape_func_y_value,
+        grad_shape_func_z_value if is_3d else np.array([]),
+        grad_shape_func_x_times_det_J_time_weight_value,
+        grad_shape_func_y_times_det_J_time_weight_value,
+        grad_shape_func_z_times_det_J_time_weight_value if is_3d else np.array([]),
     )

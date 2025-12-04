@@ -261,22 +261,22 @@ def compute_phi_M_standard_vectorized(
     gauss_indices = valid_indices[0]
     node_indices = valid_indices[1]
 
-    # Store nonzero values for sparse matrix construction
-    phi_nonzero_index_row = gauss_indices.tolist()
-    phi_nonzero_index_column = node_indices.tolist()
-    phi_nonzerovalue_data = phi[valid_mask].tolist()
+    # Store nonzero values for sparse matrix construction (as numpy arrays)
+    phi_nonzero_index_row = gauss_indices
+    phi_nonzero_index_column = node_indices
+    phi_nonzerovalue_data = phi[valid_mask]
 
     # Compute phi derivatives
     phi_P_x = phi_P_z * z_P_x
     phi_P_y = phi_P_z * z_P_y
-    phi_P_x_nonzerovalue_data = phi_P_x[valid_mask].tolist()
-    phi_P_y_nonzerovalue_data = phi_P_y[valid_mask].tolist()
+    phi_P_x_nonzerovalue_data = phi_P_x[valid_mask]
+    phi_P_y_nonzerovalue_data = phi_P_y[valid_mask]
 
     if is_3d:
         phi_P_z_val = phi_P_z * z_P_z
-        phi_P_z_nonzerovalue_data = phi_P_z_val[valid_mask].tolist()
+        phi_P_z_nonzerovalue_data = phi_P_z_val[valid_mask]
     else:
-        phi_P_z_nonzerovalue_data = []
+        phi_P_z_nonzerovalue_data = np.array([])
 
     # Update M matrices using vectorized operations
     # For each Gauss point, accumulate contributions from all valid nodes

@@ -251,12 +251,12 @@ def compute_phi_M_with_interface_method(
                             )
 
     return (
-        phi_nonzero_index_row,
-        phi_nonzero_index_column,
-        phi_nonzerovalue_data,
-        phi_P_x_nonzerovalue_data,
-        phi_P_y_nonzerovalue_data,
-        phi_P_z_nonzerovalue_data,
+        np.array(phi_nonzero_index_row),
+        np.array(phi_nonzero_index_column),
+        np.array(phi_nonzerovalue_data),
+        np.array(phi_P_x_nonzerovalue_data),
+        np.array(phi_P_y_nonzerovalue_data),
+        np.array(phi_P_z_nonzerovalue_data),
         M,
         M_P_x,
         M_P_y,
@@ -507,12 +507,12 @@ def compute_phi_M_standard(
                             )
 
     return (
-        phi_nonzero_index_row,
-        phi_nonzero_index_column,
-        phi_nonzerovalue_data,
-        phi_P_x_nonzerovalue_data,
-        phi_P_y_nonzerovalue_data,
-        phi_P_z_nonzerovalue_data,
+        np.array(phi_nonzero_index_row),
+        np.array(phi_nonzero_index_column),
+        np.array(phi_nonzerovalue_data),
+        np.array(phi_P_x_nonzerovalue_data),
+        np.array(phi_P_y_nonzerovalue_data),
+        np.array(phi_P_z_nonzerovalue_data),
         M,
         M_P_x,
         M_P_y,
@@ -920,14 +920,14 @@ def shape_grad_shape_func(
             )
 
     return (
-        shape_func_value,
-        shape_func_times_det_J_time_weight_value,
-        grad_shape_func_x_value,
-        grad_shape_func_y_value,
-        grad_shape_func_z_value,
-        grad_shape_func_x_times_det_J_time_weight_value,
-        grad_shape_func_y_times_det_J_time_weight_value,
-        grad_shape_func_z_times_det_J_time_weight_value,
+        np.array(shape_func_value),
+        np.array(shape_func_times_det_J_time_weight_value),
+        np.array(grad_shape_func_x_value),
+        np.array(grad_shape_func_y_value),
+        np.array(grad_shape_func_z_value),
+        np.array(grad_shape_func_x_times_det_J_time_weight_value),
+        np.array(grad_shape_func_y_times_det_J_time_weight_value),
+        np.array(grad_shape_func_z_times_det_J_time_weight_value),
     )
 
 
