@@ -20,13 +20,6 @@ try:
 except ImportError:
     VECTORIZED_GRAD_AVAILABLE = False
 
-try:
-    from shape_func_vectorized import shape_func_n_nodes_by_n_nodes_vectorized
-
-    VECTORIZED_SHAPE_FUNC_AVAILABLE = True
-except ImportError:
-    VECTORIZED_SHAPE_FUNC_AVAILABLE = False
-
 # Keep old name for compatibility
 VECTORIZED_AVAILABLE = VECTORIZED_PHI_AVAILABLE
 
@@ -971,8 +964,8 @@ def shape_func_n_nodes_by_n_nodes(
         List of shape function values
     """
     # Use vectorized version if available and requested
-    if use_vectorized and VECTORIZED_SHAPE_FUNC_AVAILABLE:
-        print(f"Using vectorized shapte function", flush=True)
+    if use_vectorized:
+        print(f"Using vectorized shape function", flush=True)
         return shape_func_n_nodes_by_n_nodes_vectorized(
             x_G,
             x_nodes,
