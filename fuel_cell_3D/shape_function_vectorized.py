@@ -212,6 +212,7 @@ def compute_phi_M_standard_vectorized(
         dtype: Data type for computations (default: np.float32 for memory efficiency).
                Use np.float64 for higher precision if needed.
     """
+    print(f"begin: compute_phi_M_standard_vectorized", flush=True)
 
     if M_P_z is None:
         M_P_z = np.zeros_like(M)
@@ -221,8 +222,6 @@ def compute_phi_M_standard_vectorized(
 
     # Determine dimension from M shape
     is_3d = np.shape(M)[1] == 4
-
-    print(f"is_3d: {is_3d}", flush=True)
 
     # Compute z and H matrices for all point pairs
     if is_3d:
@@ -334,6 +333,8 @@ def compute_phi_M_standard_vectorized(
                 + np.einsum("ni,nj,n->ij", H_P_z_i, H_T_i, phi_i)
                 + np.einsum("ni,nj,n->ij", H_i, HT_P_z_i, phi_i)
             )
+
+    print(f"  end: compute_phi_M_standard_vectorized", flush=True)
 
     return (
         phi_nonzero_index_row,

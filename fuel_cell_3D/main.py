@@ -1,8 +1,5 @@
-from common import time as time
-
-start_time = time.time()
 import config
-from common import np, sp
+from common import np, sp, time
 
 # Only import matplotlib if plotting is enabled
 if config.ENABLE_PLOTTING:
@@ -18,12 +15,14 @@ from define_mechanical_stiffness_matrix import (
     mechanical_force_matrix_3d,
     mechanical_stiffness_matrix_3d_fuel_cell,
 )
-from get_nodes_gauss_points import (
+from get_nodes_gauss_points import (  # x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface,; x_G_and_def_J_time_weight_3d_fuelcell_domain,; x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary,
     get_x_nodes_fuel_cell_3d_toy_image,
-    x_G_and_def_J_time_weight_3d_fuelcell_domain,
     x_G_and_det_J_line_3d_fuelcell_1d_boundary,
-    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary,
-    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface,
+)
+from get_nodes_gauss_points_vectorized import (
+    x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized,
+    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized,
+    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized,
 )
 from read_image import read_in_image
 from shape_function_in_domain import (
@@ -32,10 +31,12 @@ from shape_function_in_domain import (
     shape_grad_shape_func,
 )
 
+start_time = time()
+
 ###################################
 # define geometry and analysis type
 ###################################
-print("define geometry and analysis types")
+print("define geometry and analysis types", flush=True)
 
 single_grain = str(config.SINGLE_GRAIN)  # True: single grain, False: read from an image
 dimension = config.DIMENSION  # 3d or 2d
@@ -62,7 +63,7 @@ integral_method = config.INTEGRAL_METHOD
 ################
 # Define domain
 ################
-print("Define domain and parameters")
+print("Define domain and parameters", flush=True)
 
 if studied_physics == "fuel cell":
     if dimension == 3:
@@ -76,7 +77,7 @@ if studied_physics == "fuel cell":
 ##############
 # grain angle
 ##############
-print("define grain angle")
+print("define grain angle", flush=True)
 angle = config.ANGLE
 
 ###############################
@@ -159,14 +160,17 @@ if integral_method == "gauss":
         config.WEIGHT_G_LINE.tolist()
     )  # [0.1294849661688697,0.2797053914892766,0.3818300505051189,0.4179591836734694,0.3818300505051189,0.2797053914892766,0.1294849661688697]#         # weight of each 1D Gauss points
 
-def_para_time = time.time()
+def_para_time = time()
 
-print("time to define parameters = " + "%s seconds" % (def_para_time - start_time))
+print(
+    f"time to define parameters : {(def_para_time - start_time)/1e6} seconds",
+    flush=True,
+)
 
 ##################
 # define RK nodes
 ##################
-print("define RK nodes")
+print("define RK nodes", flush=True)
 
 
 if studied_physics == "fuel cell":
@@ -354,7 +358,7 @@ if studied_physics == "fuel cell":
 ##########################
 # define gauss points
 ##########################
-print("define gauss points")
+print("define gauss points", flush=True)
 # compute the xy coordinates of each gauss points in each gauss domain and the Jacobian
 if integral_method == "gauss":
 
@@ -362,7 +366,7 @@ if integral_method == "gauss":
 
         if dimension == 3:
             x_G_electrolyte, det_J_time_weight_electrolyte = (
-                x_G_and_def_J_time_weight_3d_fuelcell_domain(
+                x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized(
                     cell_nodes_electrolyte_x,
                     cell_nodes_electrolyte_y,
                     cell_nodes_electrolyte_z,
@@ -371,7 +375,7 @@ if integral_method == "gauss":
                 )
             )
             x_G_electrode, det_J_time_weight_electrode = (
-                x_G_and_def_J_time_weight_3d_fuelcell_domain(
+                x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized(
                     cell_nodes_electrode_x,
                     cell_nodes_electrode_y,
                     cell_nodes_electrode_z,
@@ -380,7 +384,7 @@ if integral_method == "gauss":
                 )
             )
             x_G_pore, det_J_time_weight_pore = (
-                x_G_and_def_J_time_weight_3d_fuelcell_domain(
+                x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized(
                     cell_nodes_pore_x,
                     cell_nodes_pore_y,
                     cell_nodes_pore_z,
@@ -394,7 +398,7 @@ if integral_method == "gauss":
             else:
                 # on left boundary of electrolyte
                 x_G_b_electrolyte, det_J_b_time_weight_electrolyte = (
-                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary(
+                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
                         cell_nodes_left_electrolyte_x,
                         cell_nodes_left_electrolyte_z,
                         y_min,
@@ -404,7 +408,7 @@ if integral_method == "gauss":
                 )
                 # on right boundary of electrode
                 x_G_b_electrode, det_J_b_time_weight_electrode = (
-                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary(
+                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
                         cell_nodes_right_electrode_x,
                         cell_nodes_right_electrode_z,
                         y_max,
@@ -414,7 +418,7 @@ if integral_method == "gauss":
                 )
                 # on right boundary of pore
                 x_G_b_pore, det_J_b_time_weight_pore = (
-                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary(
+                    x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
                         cell_nodes_right_pore_x,
                         cell_nodes_right_pore_z,
                         y_max,
@@ -426,7 +430,7 @@ if integral_method == "gauss":
                 (
                     x_G_b_interface_electrode_electrolyte,
                     det_J_b_time_weight_interface_electrode_electrolyte,
-                ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(
+                ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(
                     cell_nodes_interface_electrode_electrolyte_x,
                     cell_nodes_interface_electrode_electrolyte_y,
                     cell_nodes_interface_electrode_electrolyte_z,
@@ -434,12 +438,12 @@ if integral_method == "gauss":
                     weight_G_rec,
                 )
                 # # on electrode boundary and electrolyte/electrode interface
-                # x_G_b_interface_electrode_electrolyte_electrode, det_J_b_time_weight_interface_electrode_electrolyte_electrode = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(cell_nodes_interface_electrode_electrolyte_electrode_x,cell_nodes_interface_electrode_electrolyte_electrode_y, cell_nodes_interface_electrode_electrolyte_electrode_z, x_G_rec, weight_G_rec)
+                # x_G_b_interface_electrode_electrolyte_electrode, det_J_b_time_weight_interface_electrode_electrolyte_electrode = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(cell_nodes_interface_electrode_electrolyte_electrode_x,cell_nodes_interface_electrode_electrolyte_electrode_y, cell_nodes_interface_electrode_electrolyte_electrode_z, x_G_rec, weight_G_rec)
                 # on electrode boundary and pore/electrode interface
                 (
                     x_G_b_interface_electrode_pore,
                     det_J_b_time_weight_interface_electrode_pore,
-                ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(
+                ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(
                     cell_nodes_interface_electrode_pore_x,
                     cell_nodes_interface_electrode_pore_y,
                     cell_nodes_interface_electrode_pore_z,
@@ -447,12 +451,12 @@ if integral_method == "gauss":
                     weight_G_rec,
                 )
                 # # on pore boundary and pore/electrode interface
-                # x_G_b_interface_electrode_pore_pore, det_J_b_time_weight_interface_electrode_pore_pore = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(cell_nodes_interface_electrode_pore_pore_x,cell_nodes_interface_electrode_pore_pore_y, cell_nodes_interface_electrode_pore_pore_z, x_G_rec, weight_G_rec)
+                # x_G_b_interface_electrode_pore_pore, det_J_b_time_weight_interface_electrode_pore_pore = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(cell_nodes_interface_electrode_pore_pore_x,cell_nodes_interface_electrode_pore_pore_y, cell_nodes_interface_electrode_pore_pore_z, x_G_rec, weight_G_rec)
                 if delta_point_source == "False":
                     (
                         x_G_b_distributed_point_source_surface,
                         det_J_b_time_weight_distributed_point_source_surface,
-                    ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface(
+                    ) = x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(
                         np.asarray(cell_nodes_distributed_point_source_surface_x),
                         np.asarray(cell_nodes_distributed_point_source_surface_y),
                         np.asarray(cell_nodes_distributed_point_source_surface_z),
@@ -470,7 +474,7 @@ if integral_method == "gauss":
             # det_J_b_time_weight_line is now already a NumPy array from the function
 
             x_G_b_fixed, det_J_b_time_weight_fixed = (
-                x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary(
+                x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
                     cell_nodes_fixed_x, cell_nodes_fixed_z, y_min, x_G_rec, weight_G_rec
                 )
             )
@@ -636,16 +640,16 @@ if integral_method == "gauss":
             + str(num_gauss_points_on_boundary_electrode)
         )
 
-def_nodes_gauss_points_time = time.time()
+def_nodes_gauss_points_time = time()
 print(
-    "time to define nodes and Gauss points = "
-    + "%s seconds" % (def_nodes_gauss_points_time - def_para_time)
+    f"time to define nodes and Gauss points {(def_nodes_gauss_points_time - def_para_time) / 1e6} seconds",
+    flush=True,
 )
 
 ####################################################
 # Compute shape function and its gradient in domain
 #####################################################
-print("Compute shape function and its gradient in domain")
+print("Compute shape function and its gradient in domain", flush=True)
 
 c = 2  # support size
 
@@ -1292,12 +1296,11 @@ if dimension == 3:
         shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
     )
 
-comp_shape_func_grad_shape_func_in_domain = time.time()
+comp_shape_func_grad_shape_func_in_domain = time()
 
 print(
-    "time to compute the shape function and grad of shape function in domain = "
-    + "%s seconds"
-    % (comp_shape_func_grad_shape_func_in_domain - def_nodes_gauss_points_time)
+    f"time to compute the shape function and grad of shape function in domain : {(comp_shape_func_grad_shape_func_in_domain - def_nodes_gauss_points_time) / 1e6} seconds",
+    flush=True,
 )
 
 
@@ -1305,7 +1308,7 @@ print(
 # Compute shape function and its gradient on boundaries
 ########################################################
 
-print("Compute shape function and its gradient on boundaries")
+print("Compute shape function and its gradient on boundaries", flush=True)
 
 
 if dimension == 3:
@@ -1924,7 +1927,7 @@ if dimension == 3:
     )
 
     if delta_point_source == "False":
-        print(np.shape(x_G_b_distributed_point_source_surface)[0])
+        print(np.shape(x_G_b_distributed_point_source_surface)[0], flush=True)
         M_b_distributed_point_source_surface = np.array(
             [
                 np.zeros((4, 4))
@@ -3501,16 +3504,12 @@ if dimension == 3:
     )
 
 
-comp_shape_func_grad_shape_func_on_boundaries = time.time()
+comp_shape_func_grad_shape_func_on_boundaries = time()
 
 
 print(
-    "time to compute the shape function and grad of shape function on baoundaries = "
-    + "%s seconds"
-    % (
-        comp_shape_func_grad_shape_func_on_boundaries
-        - comp_shape_func_grad_shape_func_in_domain
-    )
+    f"time to compute the shape function and grad of shape function on boundaries = {(comp_shape_func_grad_shape_func_on_boundaries - comp_shape_func_grad_shape_func_in_domain) / 1e6} seconds",
+    flush=True,
 )
 
 
@@ -3651,7 +3650,7 @@ if studied_physics == "fuel cell":
         interface_source_electrode_pore_pore = J_interface
 
         while diff > 6.0e-2:
-            print("iteration number:", iteration_num)
+            print("iteration number:", iteration_num, flush=True)
 
             if delta_point_source == "True":
 
@@ -3715,7 +3714,7 @@ if studied_physics == "fuel cell":
             )
 
             if config.USE_NUMPY_EQUIVALENTS:
-                print(f"Using np.vstack instead of scipy.sparse.vstack")
+                print(f"Using np.vstack instead of scipy.sparse.vstack", flush=True)
                 shape_func_interface_electrode = csr_array(
                     np.vstack(
                         [
@@ -3786,7 +3785,7 @@ if studied_physics == "fuel cell":
             )
 
             if config.USE_NUMPY_EQUIVALENTS:
-                print(f"Using np.block instead of scipy.sparse.block_diag")
+                print(f"Using np.block instead of scipy.sparse.block_diag", flush=True)
                 # K = block_diag((K_electrolyte, K_electrode, K_pore), format='csc')
                 # K = np.block([
                 #             [K_electrolyte.toarray(),        np.zeros_like(K_electrode.toarray()), np.zeros_like(K_pore.toarray())],
@@ -3843,7 +3842,7 @@ if studied_physics == "fuel cell":
                 + num_nodes_electrode
                 + num_nodes_pore
             ]
-            print("change of solution", diff)
+            print("change of solution", diff, flush=True)
 
             # update the source term
             if delta_point_source == "True":
@@ -3944,7 +3943,7 @@ if studied_physics == "fuel cell":
         # assemble matrix for mechanical simulation and solve
         ####################################################################
         # if ii==0:
-        start_mechanical_time = time.time()
+        start_mechanical_time = time()
 
         D_damage = np.zeros((num_gauss_points_in_domain_mechanical, 1))
         lambda_mechanical_electrode_array = lambda_mechanical_electrode * np.ones(
@@ -3965,7 +3964,7 @@ if studied_physics == "fuel cell":
         )
         mu_mechanical = np.concatenate((mu_electrolyte_array, mu_electrode_array))
 
-        print("define mechanical stiffness matrix")
+        print("define mechanical stiffness matrix", flush=True)
 
         C, T_c = mechanical_C_tensor_3d(
             num_gauss_points_in_domain_mechanical,
@@ -4006,11 +4005,11 @@ if studied_physics == "fuel cell":
             grad_shape_func_b_z_mechanical,
             grad_shape_func_b_z_times_det_J_b_time_weight_mechanical,
         )
-        comp_mechanical_stiffness_matrix = time.time()
+        comp_mechanical_stiffness_matrix = time()
 
         print(
-            "time to compute the mechanical stiffness matrix = "
-            + "%s seconds" % (comp_mechanical_stiffness_matrix - start_mechanical_time)
+            f"time to compute the mechanical stiffness matrix = {(comp_mechanical_stiffness_matrix - start_mechanical_time) / 1e6} seconds",
+            flush=True,
         )
 
         c_G_domain_electrolyte = (
@@ -4100,22 +4099,21 @@ if studied_physics == "fuel cell":
         )
 
         # if ii==0:
-        comp_mechanical_force_matrix = time.time()
+        comp_mechanical_force_matrix = time()
 
         print(
-            "time to compute mechanical force matrix= "
-            + "%s seconds"
-            % (comp_mechanical_force_matrix - comp_mechanical_stiffness_matrix)
+            f"time to compute mechanical force matrix= {(comp_mechanical_force_matrix - comp_mechanical_stiffness_matrix) / 1e6} seconds",
+            flush=True,
         )
 
         # solve displacement field
         u_disp = spsolve(K_mechanical, f_mechanical)  # 1d array
 
-        solve_mechanical_matrix = time.time()
+        solve_mechanical_matrix = time()
 
         print(
-            "time to solve mechanical matrix= "
-            + "%s seconds" % (solve_mechanical_matrix - comp_mechanical_force_matrix)
+            f"time to solve mechanical matrix = { (solve_mechanical_matrix - comp_mechanical_force_matrix) / 1e6} seconds",
+            flush=True,
         )
 
         ux = u_disp[0:num_nodes_mechanical]  # disp at nodes along x
@@ -4198,7 +4196,7 @@ if studied_physics == "fuel cell":
             )
         ) ** 0.5
 
-    print(np.shape(epsilon_e_eq))
+    print(np.shape(epsilon_e_eq), flush=True)
     k = epsilon_e_eq
 
     D_damage[np.logical_and(k > k_i, k <= k_f)] = (
@@ -4210,8 +4208,8 @@ if studied_physics == "fuel cell":
     D_damage[k > k_f] = 1.0
     D_damage[k <= k_i] = 0.0
 
-    print(np.shape(x_G_mechanical))
-    print(np.shape(D_damage))
+    print(np.shape(x_G_mechanical), flush=True)
+    print(np.shape(D_damage), flush=True)
 
     # Use dot product for interpolation to nodes and Gauss points
     phi_on_nodes_electrolyte = shape_func_n_nodes_n_nodes_electrolyte.dot(
@@ -4226,13 +4224,13 @@ if studied_physics == "fuel cell":
     C_on_GP_electrode = shape_func_electrode.dot(C_new_electrode).ravel()
     C_on_GP_pore = shape_func_pore.dot(C_new_pore).ravel()
 
-    print("on nodes:", np.max(phi_on_nodes_electrolyte))
-    print("on nodes:", np.max(C_on_nodes_electrode))
-    print("on nodes:", np.max(C_on_nodes_pore))
+    print("on nodes:", np.max(phi_on_nodes_electrolyte), flush=True)
+    print("on nodes:", np.max(C_on_nodes_electrode), flush=True)
+    print("on nodes:", np.max(C_on_nodes_pore), flush=True)
 
-    print("on GP:", np.max(phi_on_GP_electrolyte))
-    print("on GP:", np.max(C_on_GP_electrode))
-    print("on GP:", np.max(C_on_GP_pore))
+    print("on GP:", np.max(phi_on_GP_electrolyte), flush=True)
+    print("on GP:", np.max(C_on_GP_electrode), flush=True)
+    print("on GP:", np.max(C_on_GP_pore), flush=True)
 
     if config.ENABLE_FILE_IO:
         np.savetxt("svars_phi_on_nodes_electrolyte.txt", phi_on_nodes_electrolyte)
