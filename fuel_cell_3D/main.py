@@ -354,6 +354,10 @@ if studied_physics == "fuel cell":
 # 2939 electrode cells
 # 3951 voids
 
+import pdb
+
+pdb.set_trace()
+
 
 ##########################
 # define gauss points
@@ -685,57 +689,53 @@ if studied_physics == "fuel cell" and single_grain == "False":
 
 
 if dimension == 3:
-    M_electrolyte = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
-    )
-    M_P_x_electrolyte = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
+    # Electrolyte matrices - vectorized creation
+    M_electrolyte = np.zeros((num_gauss_points_in_domain_electrolyte, 4, 4))
+    M_P_x_electrolyte = np.zeros(
+        (num_gauss_points_in_domain_electrolyte, 4, 4)
     )  # partial M partial x
-    M_P_y_electrolyte = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
+    M_P_y_electrolyte = np.zeros(
+        (num_gauss_points_in_domain_electrolyte, 4, 4)
     )  # partial M partial y
-    M_P_z_electrolyte = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
-    )  # partial M partial y
+    M_P_z_electrolyte = np.zeros(
+        (num_gauss_points_in_domain_electrolyte, 4, 4)
+    )  # partial M partial z
 
-    M_electrode = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrode)]
-    )
-    M_P_x_electrode = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrode)]
+    # Electrode matrices - vectorized creation
+    M_electrode = np.zeros((num_gauss_points_in_domain_electrode, 4, 4))
+    M_P_x_electrode = np.zeros(
+        (num_gauss_points_in_domain_electrode, 4, 4)
     )  # partial M partial x
-    M_P_y_electrode = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrode)]
+    M_P_y_electrode = np.zeros(
+        (num_gauss_points_in_domain_electrode, 4, 4)
     )  # partial M partial y
-    M_P_z_electrode = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_electrolyte)]
-    )  # partial M partial y
+    M_P_z_electrode = np.zeros(
+        (num_gauss_points_in_domain_electrode, 4, 4)
+    )  # partial M partial z
 
-    M_pore = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_pore)]
-    )
-    M_P_x_pore = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_pore)]
+    # Pore matrices - vectorized creation
+    M_pore = np.zeros((num_gauss_points_in_domain_pore, 4, 4))
+    M_P_x_pore = np.zeros(
+        (num_gauss_points_in_domain_pore, 4, 4)
     )  # partial M partial x
-    M_P_y_pore = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_pore)]
+    M_P_y_pore = np.zeros(
+        (num_gauss_points_in_domain_pore, 4, 4)
     )  # partial M partial y
-    M_P_z_pore = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_pore)]
-    )  # partial M partial y
+    M_P_z_pore = np.zeros(
+        (num_gauss_points_in_domain_pore, 4, 4)
+    )  # partial M partial z
 
-    M_mechanical = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_mechanical)]
-    )
-    M_P_x_mechanical = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_mechanical)]
+    # Mechanical matrices - vectorized creation
+    M_mechanical = np.zeros((num_gauss_points_in_domain_mechanical, 4, 4))
+    M_P_x_mechanical = np.zeros(
+        (num_gauss_points_in_domain_mechanical, 4, 4)
     )  # partial M partial x
-    M_P_y_mechanical = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_mechanical)]
+    M_P_y_mechanical = np.zeros(
+        (num_gauss_points_in_domain_mechanical, 4, 4)
     )  # partial M partial y
-    M_P_z_mechanical = np.array(
-        [np.zeros((4, 4)) for _ in range(num_gauss_points_in_domain_mechanical)]
-    )  # partial M partial y
+    M_P_z_mechanical = np.zeros(
+        (num_gauss_points_in_domain_mechanical, 4, 4)
+    )  # partial M partial z
 
     (
         phi_nonzero_index_row_electrolyte,
@@ -848,12 +848,10 @@ if dimension == 3:
 
 print(f"Done computing phi for all equations!", flush=True)
 
-num_non_zero_phi_a_electrolyte = np.shape(np.array(phi_nonzero_index_row_electrolyte))[
-    0
-]
-num_non_zero_phi_a_electrode = np.shape(np.array(phi_nonzero_index_row_electrode))[0]
-num_non_zero_phi_a_pore = np.shape(np.array(phi_nonzero_index_row_pore))[0]
-num_non_zero_phi_a_mechanical = np.shape(np.array(phi_nonzero_index_row_mechanical))[0]
+num_non_zero_phi_a_electrolyte = np.shape(phi_nonzero_index_row_electrolyte)[0]
+num_non_zero_phi_a_electrode = np.shape(phi_nonzero_index_row_electrode)[0]
+num_non_zero_phi_a_pore = np.shape(phi_nonzero_index_row_pore)[0]
+num_non_zero_phi_a_mechanical = np.shape(phi_nonzero_index_row_mechanical)[0]
 
 
 if dimension == 3:
@@ -987,60 +985,60 @@ print(f"Done with shape grad func computation!", flush=True)
 
 shape_func_electrolyte = csr_array(
     (
-        np.array(shape_func_value_electrolyte),
+        shape_func_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
 )
 shape_func_times_det_J_time_weight_electrolyte = csr_array(
     (
-        np.array(shape_func_times_det_J_time_weight_value_electrolyte),
+        shape_func_times_det_J_time_weight_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
 )
 grad_shape_func_x_electrolyte = csr_array(
     (
-        np.array(grad_shape_func_x_value_electrolyte),
+        grad_shape_func_x_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
 )
 grad_shape_func_y_electrolyte = csr_array(
     (
-        np.array(grad_shape_func_y_value_electrolyte),
+        grad_shape_func_y_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
 )
 grad_shape_func_x_times_det_J_time_weight_electrolyte = csr_array(
     (
-        np.array(grad_shape_func_x_times_det_J_time_weight_value_electrolyte),
+        grad_shape_func_x_times_det_J_time_weight_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
 )
 grad_shape_func_y_times_det_J_time_weight_electrolyte = csr_array(
     (
-        np.array(grad_shape_func_y_times_det_J_time_weight_value_electrolyte),
+        grad_shape_func_y_times_det_J_time_weight_value_electrolyte,
         (
-            np.array(phi_nonzero_index_row_electrolyte),
-            np.array(phi_nonzero_index_column_electrolyte),
+            phi_nonzero_index_row_electrolyte,
+            phi_nonzero_index_column_electrolyte,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
@@ -1048,60 +1046,60 @@ grad_shape_func_y_times_det_J_time_weight_electrolyte = csr_array(
 
 shape_func_electrode = csr_array(
     (
-        np.array(shape_func_value_electrode),
+        shape_func_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
 )
 shape_func_times_det_J_time_weight_electrode = csr_array(
     (
-        np.array(shape_func_times_det_J_time_weight_value_electrode),
+        shape_func_times_det_J_time_weight_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
 )
 grad_shape_func_x_electrode = csr_array(
     (
-        np.array(grad_shape_func_x_value_electrode),
+        grad_shape_func_x_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
 )
 grad_shape_func_y_electrode = csr_array(
     (
-        np.array(grad_shape_func_y_value_electrode),
+        grad_shape_func_y_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
 )
 grad_shape_func_x_times_det_J_time_weight_electrode = csr_array(
     (
-        np.array(grad_shape_func_x_times_det_J_time_weight_value_electrode),
+        grad_shape_func_x_times_det_J_time_weight_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
 )
 grad_shape_func_y_times_det_J_time_weight_electrode = csr_array(
     (
-        np.array(grad_shape_func_y_times_det_J_time_weight_value_electrode),
+        grad_shape_func_y_times_det_J_time_weight_value_electrode,
         (
-            np.array(phi_nonzero_index_row_electrode),
-            np.array(phi_nonzero_index_column_electrode),
+            phi_nonzero_index_row_electrode,
+            phi_nonzero_index_column_electrode,
         ),
     ),
     shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
@@ -1109,103 +1107,103 @@ grad_shape_func_y_times_det_J_time_weight_electrode = csr_array(
 
 shape_func_pore = csr_array(
     (
-        np.array(shape_func_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        shape_func_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 shape_func_times_det_J_time_weight_pore = csr_array(
     (
-        np.array(shape_func_times_det_J_time_weight_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        shape_func_times_det_J_time_weight_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 grad_shape_func_x_pore = csr_array(
     (
-        np.array(grad_shape_func_x_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        grad_shape_func_x_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 grad_shape_func_y_pore = csr_array(
     (
-        np.array(grad_shape_func_y_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        grad_shape_func_y_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 grad_shape_func_x_times_det_J_time_weight_pore = csr_array(
     (
-        np.array(grad_shape_func_x_times_det_J_time_weight_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        grad_shape_func_x_times_det_J_time_weight_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 grad_shape_func_y_times_det_J_time_weight_pore = csr_array(
     (
-        np.array(grad_shape_func_y_times_det_J_time_weight_value_pore),
-        (np.array(phi_nonzero_index_row_pore), np.array(phi_nonzero_index_column_pore)),
+        grad_shape_func_y_times_det_J_time_weight_value_pore,
+        (phi_nonzero_index_row_pore, phi_nonzero_index_column_pore),
     ),
     shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
 )
 
 shape_func_mechanical = csr_array(
     (
-        np.array(shape_func_value_mechanical),
+        shape_func_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 shape_func_times_det_J_time_weight_mechanical = csr_array(
     (
-        np.array(shape_func_times_det_J_time_weight_value_mechanical),
+        shape_func_times_det_J_time_weight_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 grad_shape_func_x_mechanical = csr_array(
     (
-        np.array(grad_shape_func_x_value_mechanical),
+        grad_shape_func_x_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 grad_shape_func_y_mechanical = csr_array(
     (
-        np.array(grad_shape_func_y_value_mechanical),
+        grad_shape_func_y_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 grad_shape_func_x_times_det_J_time_weight_mechanical = csr_array(
     (
-        np.array(grad_shape_func_x_times_det_J_time_weight_value_mechanical),
+        grad_shape_func_x_times_det_J_time_weight_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
 )
 grad_shape_func_y_times_det_J_time_weight_mechanical = csr_array(
     (
-        np.array(grad_shape_func_y_times_det_J_time_weight_value_mechanical),
+        grad_shape_func_y_times_det_J_time_weight_value_mechanical,
         (
-            np.array(phi_nonzero_index_row_mechanical),
-            np.array(phi_nonzero_index_column_mechanical),
+            phi_nonzero_index_row_mechanical,
+            phi_nonzero_index_column_mechanical,
         ),
     ),
     shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
@@ -1214,20 +1212,20 @@ grad_shape_func_y_times_det_J_time_weight_mechanical = csr_array(
 if dimension == 3:
     grad_shape_func_z_electrolyte = csr_array(
         (
-            np.array(grad_shape_func_z_value_electrolyte),
+            grad_shape_func_z_value_electrolyte,
             (
-                np.array(phi_nonzero_index_row_electrolyte),
-                np.array(phi_nonzero_index_column_electrolyte),
+                phi_nonzero_index_row_electrolyte,
+                phi_nonzero_index_column_electrolyte,
             ),
         ),
         shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
     )
     grad_shape_func_z_times_det_J_time_weight_electrolyte = csr_array(
         (
-            np.array(grad_shape_func_z_times_det_J_time_weight_value_electrolyte),
+            grad_shape_func_z_times_det_J_time_weight_value_electrolyte,
             (
-                np.array(phi_nonzero_index_row_electrolyte),
-                np.array(phi_nonzero_index_column_electrolyte),
+                phi_nonzero_index_row_electrolyte,
+                phi_nonzero_index_column_electrolyte,
             ),
         ),
         shape=(num_gauss_points_in_domain_electrolyte, num_nodes_electrolyte),
@@ -1235,20 +1233,20 @@ if dimension == 3:
 
     grad_shape_func_z_electrode = csr_array(
         (
-            np.array(grad_shape_func_z_value_electrode),
+            grad_shape_func_z_value_electrode,
             (
-                np.array(phi_nonzero_index_row_electrode),
-                np.array(phi_nonzero_index_column_electrode),
+                phi_nonzero_index_row_electrode,
+                phi_nonzero_index_column_electrode,
             ),
         ),
         shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
     )
     grad_shape_func_z_times_det_J_time_weight_electrode = csr_array(
         (
-            np.array(grad_shape_func_z_times_det_J_time_weight_value_electrode),
+            grad_shape_func_z_times_det_J_time_weight_value_electrode,
             (
-                np.array(phi_nonzero_index_row_electrode),
-                np.array(phi_nonzero_index_column_electrode),
+                phi_nonzero_index_row_electrode,
+                phi_nonzero_index_column_electrode,
             ),
         ),
         shape=(num_gauss_points_in_domain_electrode, num_nodes_electrode),
@@ -1256,20 +1254,20 @@ if dimension == 3:
 
     grad_shape_func_z_pore = csr_array(
         (
-            np.array(grad_shape_func_z_value_pore),
+            grad_shape_func_z_value_pore,
             (
-                np.array(phi_nonzero_index_row_pore),
-                np.array(phi_nonzero_index_column_pore),
+                phi_nonzero_index_row_pore,
+                phi_nonzero_index_column_pore,
             ),
         ),
         shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
     )
     grad_shape_func_z_times_det_J_time_weight_pore = csr_array(
         (
-            np.array(grad_shape_func_z_times_det_J_time_weight_value_pore),
+            grad_shape_func_z_times_det_J_time_weight_value_pore,
             (
-                np.array(phi_nonzero_index_row_pore),
-                np.array(phi_nonzero_index_column_pore),
+                phi_nonzero_index_row_pore,
+                phi_nonzero_index_column_pore,
             ),
         ),
         shape=(num_gauss_points_in_domain_pore, num_nodes_pore),
@@ -1277,20 +1275,20 @@ if dimension == 3:
 
     grad_shape_func_z_mechanical = csr_array(
         (
-            np.array(grad_shape_func_z_value_mechanical),
+            grad_shape_func_z_value_mechanical,
             (
-                np.array(phi_nonzero_index_row_mechanical),
-                np.array(phi_nonzero_index_column_mechanical),
+                phi_nonzero_index_row_mechanical,
+                phi_nonzero_index_column_mechanical,
             ),
         ),
         shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
     )
     grad_shape_func_z_times_det_J_time_weight_mechanical = csr_array(
         (
-            np.array(grad_shape_func_z_times_det_J_time_weight_value_mechanical),
+            grad_shape_func_z_times_det_J_time_weight_value_mechanical,
             (
-                np.array(phi_nonzero_index_row_mechanical),
-                np.array(phi_nonzero_index_column_mechanical),
+                phi_nonzero_index_row_mechanical,
+                phi_nonzero_index_column_mechanical,
             ),
         ),
         shape=(num_gauss_points_in_domain_mechanical, num_nodes_mechanical),
@@ -3019,9 +3017,9 @@ if dimension == 3:
         M_P_z_pore_nn,
     )
 
-    num_non_zero_phi_a_electrolyte_nn = np.shape(
-        np.array(phi_nonzero_index_row_electrolyte_nn)
-    )[0]
+    num_non_zero_phi_a_electrolyte_nn = np.shape(phi_nonzero_index_row_electrolyte_nn)[
+        0
+    ]
     shape_func_value_electrolyte_nn = shape_func_n_nodes_by_n_nodes(
         x_nodes_electrolyte,
         x_nodes_electrolyte,
@@ -3036,16 +3034,14 @@ if dimension == 3:
         (
             np.array(shape_func_value_electrolyte_nn),
             (
-                np.array(phi_nonzero_index_row_electrolyte_nn),
-                np.array(phi_nonzero_index_column_electrolyte_nn),
+                phi_nonzero_index_row_electrolyte_nn,
+                phi_nonzero_index_column_electrolyte_nn,
             ),
         ),
         shape=(num_nodes_electrolyte, num_nodes_electrolyte),
     )
 
-    num_non_zero_phi_a_electrode_nn = np.shape(
-        np.array(phi_nonzero_index_row_electrode_nn)
-    )[0]
+    num_non_zero_phi_a_electrode_nn = np.shape(phi_nonzero_index_row_electrode_nn)[0]
     shape_func_value_electrode_nn = shape_func_n_nodes_by_n_nodes(
         x_nodes_electrode,
         x_nodes_electrode,
@@ -3060,14 +3056,14 @@ if dimension == 3:
         (
             np.array(shape_func_value_electrode_nn),
             (
-                np.array(phi_nonzero_index_row_electrode_nn),
-                np.array(phi_nonzero_index_column_electrode_nn),
+                phi_nonzero_index_row_electrode_nn,
+                phi_nonzero_index_column_electrode_nn,
             ),
         ),
         shape=(num_nodes_electrode, num_nodes_electrode),
     )
 
-    num_non_zero_phi_a_pore_nn = np.shape(np.array(phi_nonzero_index_row_pore_nn))[0]
+    num_non_zero_phi_a_pore_nn = np.shape(phi_nonzero_index_row_pore_nn)[0]
     shape_func_value_pore_nn = shape_func_n_nodes_by_n_nodes(
         x_nodes_pore,
         x_nodes_pore,
@@ -3082,8 +3078,8 @@ if dimension == 3:
         (
             np.array(shape_func_value_pore_nn),
             (
-                np.array(phi_nonzero_index_row_pore_nn),
-                np.array(phi_nonzero_index_column_pore_nn),
+                phi_nonzero_index_row_pore_nn,
+                phi_nonzero_index_column_pore_nn,
             ),
         ),
         shape=(num_nodes_pore, num_nodes_pore),
@@ -3137,7 +3133,7 @@ if dimension == 3:
     )
 
     num_non_zero_phi_a_electrolyte_line_nodes = np.shape(
-        np.array(phi_nonzero_index_row_electrolyte_line_nodes)
+        phi_nonzero_index_row_electrolyte_line_nodes
     )[0]
 
     shape_func_value_electrolyte_line_nodes = shape_func_n_nodes_by_n_nodes(
@@ -3155,8 +3151,8 @@ if dimension == 3:
         (
             np.array(shape_func_value_electrolyte_line_nodes),
             (
-                np.array(phi_nonzero_index_row_electrolyte_line_nodes),
-                np.array(phi_nonzero_index_column_electrolyte_line_nodes),
+                phi_nonzero_index_row_electrolyte_line_nodes,
+                phi_nonzero_index_column_electrolyte_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_electrolyte),
@@ -3165,17 +3161,15 @@ if dimension == 3:
     # Apply weights before creating sparse matrix (correct approach)
     weighted_values_electrolyte = (
         np.array(shape_func_value_electrolyte_line_nodes)
-        * det_J_b_time_weight_line[
-            np.array(phi_nonzero_index_row_electrolyte_line_nodes)
-        ]
+        * det_J_b_time_weight_line[phi_nonzero_index_row_electrolyte_line_nodes]
     )
 
     shape_func_line_n_nodes_electrolyte_times_det_J_b_time_weight = csr_array(
         (
             weighted_values_electrolyte,
             (
-                np.array(phi_nonzero_index_row_electrolyte_line_nodes),
-                np.array(phi_nonzero_index_column_electrolyte_line_nodes),
+                phi_nonzero_index_row_electrolyte_line_nodes,
+                phi_nonzero_index_column_electrolyte_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_electrolyte),
@@ -3223,7 +3217,7 @@ if dimension == 3:
     )
 
     num_non_zero_phi_a_electrode_line_nodes = np.shape(
-        np.array(phi_nonzero_index_row_electrode_line_nodes)
+        phi_nonzero_index_row_electrode_line_nodes
     )[0]
 
     shape_func_value_electrode_line_nodes = shape_func_n_nodes_by_n_nodes(
@@ -3241,8 +3235,8 @@ if dimension == 3:
         (
             np.array(shape_func_value_electrode_line_nodes),
             (
-                np.array(phi_nonzero_index_row_electrode_line_nodes),
-                np.array(phi_nonzero_index_column_electrode_line_nodes),
+                phi_nonzero_index_row_electrode_line_nodes,
+                phi_nonzero_index_column_electrode_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_electrode),
@@ -3250,15 +3244,15 @@ if dimension == 3:
     # Apply weights before creating sparse matrix (correct approach)
     weighted_values_electrode = (
         np.array(shape_func_value_electrode_line_nodes)
-        * det_J_b_time_weight_line[np.array(phi_nonzero_index_row_electrode_line_nodes)]
+        * det_J_b_time_weight_line[phi_nonzero_index_row_electrode_line_nodes]
     )
 
     shape_func_line_n_nodes_electrode_times_det_J_b_time_weight = csr_array(
         (
             weighted_values_electrode,
             (
-                np.array(phi_nonzero_index_row_electrode_line_nodes),
-                np.array(phi_nonzero_index_column_electrode_line_nodes),
+                phi_nonzero_index_row_electrode_line_nodes,
+                phi_nonzero_index_column_electrode_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_electrode),
@@ -3306,7 +3300,7 @@ if dimension == 3:
     )
 
     num_non_zero_phi_a_pore_line_nodes = np.shape(
-        np.array(phi_nonzero_index_row_pore_line_nodes)
+        phi_nonzero_index_row_pore_line_nodes
     )[0]
 
     shape_func_value_pore_line_nodes = shape_func_n_nodes_by_n_nodes(
@@ -3324,8 +3318,8 @@ if dimension == 3:
         (
             np.array(shape_func_value_pore_line_nodes),
             (
-                np.array(phi_nonzero_index_row_pore_line_nodes),
-                np.array(phi_nonzero_index_column_pore_line_nodes),
+                phi_nonzero_index_row_pore_line_nodes,
+                phi_nonzero_index_column_pore_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_pore),
@@ -3333,15 +3327,15 @@ if dimension == 3:
     # Apply weights before creating sparse matrix (correct approach)
     weighted_values_pore = (
         np.array(shape_func_value_pore_line_nodes)
-        * det_J_b_time_weight_line[np.array(phi_nonzero_index_row_pore_line_nodes)]
+        * det_J_b_time_weight_line[phi_nonzero_index_row_pore_line_nodes]
     )
 
     shape_func_line_n_nodes_pore_times_det_J_b_time_weight = csr_array(
         (
             weighted_values_pore,
             (
-                np.array(phi_nonzero_index_row_pore_line_nodes),
-                np.array(phi_nonzero_index_column_pore_line_nodes),
+                phi_nonzero_index_row_pore_line_nodes,
+                phi_nonzero_index_column_pore_line_nodes,
             ),
         ),
         shape=(num_source_line_gauss_points, num_nodes_pore),
@@ -3386,9 +3380,7 @@ if dimension == 3:
         M_P_z_fixed_nodes,
     )
 
-    num_non_zero_phi_a_fixed_nodes = np.shape(
-        np.array(phi_nonzero_index_row_fixed_nodes)
-    )[0]
+    num_non_zero_phi_a_fixed_nodes = np.shape(phi_nonzero_index_row_fixed_nodes)[0]
 
     (
         shape_func_value_fixed_point,
@@ -3426,8 +3418,8 @@ if dimension == 3:
         (
             np.array(shape_func_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3436,8 +3428,8 @@ if dimension == 3:
         (
             np.array(shape_func_times_det_J_time_weight_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3446,8 +3438,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_x_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3456,8 +3448,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_y_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3466,8 +3458,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_x_times_det_J_time_weight_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3476,8 +3468,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_y_times_det_J_time_weight_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3486,8 +3478,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_z_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
@@ -3496,8 +3488,8 @@ if dimension == 3:
         (
             np.array(grad_shape_func_z_times_det_J_time_weight_value_fixed_point),
             (
-                np.array(phi_nonzero_index_row_fixed_nodes),
-                np.array(phi_nonzero_index_column_fixed_nodes),
+                phi_nonzero_index_row_fixed_nodes,
+                phi_nonzero_index_column_fixed_nodes,
             ),
         ),
         shape=(num_fixed_gauss_points, num_nodes_mechanical),
