@@ -8,7 +8,7 @@ from common import np
 
 
 def compute_H_matrices_sparse_2d(
-    x_G, x_nodes, gauss_indices, node_indices, H_scaling_factor, dtype=np.float32
+    x_G, x_nodes, gauss_indices, node_indices, H_scaling_factor, dtype=np.float64
 ):
     """Compute H matrices for sparse Gauss-node pairs in 2D.
 
@@ -28,29 +28,29 @@ def compute_H_matrices_sparse_2d(
     n_pairs = len(gauss_indices)
 
     # Get relevant points
-    x_G_sparse = x_G[gauss_indices].astype(dtype)
-    x_nodes_sparse = x_nodes[node_indices].astype(dtype)
+    x_G_sparse = x_G[gauss_indices]
+    x_nodes_sparse = x_nodes[node_indices]
 
     # Compute differences
     diff = x_G_sparse - x_nodes_sparse  # (n_pairs, 2)
 
     # Build H_T matrices: (n_pairs, 3)
     H_T = np.zeros((n_pairs, 3), dtype=dtype)
-    H_T[:, 0] = dtype(1.0)
+    H_T[:, 0] = 1.0
     H_T[:, 1] = diff[:, 0] / H_scaling_factor
     H_T[:, 2] = diff[:, 1] / H_scaling_factor
 
     # Derivatives of H_T
     HT_P_x = np.zeros((n_pairs, 3), dtype=dtype)
-    HT_P_x[:, 1] = dtype(1.0) / H_scaling_factor
+    HT_P_x[:, 1] = 1.0 / H_scaling_factor
 
     HT_P_y = np.zeros((n_pairs, 3), dtype=dtype)
-    HT_P_y[:, 2] = dtype(1.0) / H_scaling_factor
+    HT_P_y[:, 2] = 1.0 / H_scaling_factor
 
-    # Transpose to get H (just copy since they're 1D in last dimension)
-    H = H_T.copy()
-    H_P_x = HT_P_x.copy()
-    H_P_y = HT_P_y.copy()
+    # Transpose to get H (just use direct assignment since they're 1D in last dimension)
+    H = H_T
+    H_P_x = HT_P_x
+    H_P_y = HT_P_y
 
     print(f"  end: compute_H_matrices_sparse_2d", flush=True)
 
@@ -58,7 +58,7 @@ def compute_H_matrices_sparse_2d(
 
 
 def compute_H_matrices_sparse_3d(
-    x_G, x_nodes, gauss_indices, node_indices, H_scaling_factor, dtype=np.float32
+    x_G, x_nodes, gauss_indices, node_indices, H_scaling_factor, dtype=np.float64
 ):
     """Compute H matrices for sparse Gauss-node pairs in 3D.
 
@@ -78,63 +78,53 @@ def compute_H_matrices_sparse_3d(
     n_pairs = len(gauss_indices)
 
     # Get relevant points
-    x_G_sparse = x_G[gauss_indices].astype(dtype)
-    x_nodes_sparse = x_nodes[node_indices].astype(dtype)
+    x_G_sparse = x_G[gauss_indices]
+    x_nodes_sparse = x_nodes[node_indices]
 
     # Compute differences
     diff = x_G_sparse - x_nodes_sparse  # (n_pairs, 3)
 
     # Build H_T matrices: (n_pairs, 4)
     H_T = np.zeros((n_pairs, 4), dtype=dtype)
-    H_T[:, 0] = dtype(1.0)
+    H_T[:, 0] = 1.0
     H_T[:, 1] = diff[:, 0] / H_scaling_factor
     H_T[:, 2] = diff[:, 1] / H_scaling_factor
     H_T[:, 3] = diff[:, 2] / H_scaling_factor
 
     # Derivatives of H_T
     HT_P_x = np.zeros((n_pairs, 4), dtype=dtype)
-    HT_P_x[:, 1] = dtype(1.0) / H_scaling_factor
+    HT_P_x[:, 1] = 1.0 / H_scaling_factor
 
     HT_P_y = np.zeros((n_pairs, 4), dtype=dtype)
-    HT_P_y[:, 2] = dtype(1.0) / H_scaling_factor
+    HT_P_y[:, 2] = 1.0 / H_scaling_factor
 
     HT_P_z = np.zeros((n_pairs, 4), dtype=dtype)
-    HT_P_z[:, 3] = dtype(1.0) / H_scaling_factor
+    HT_P_z[:, 3] = 1.0 / H_scaling_factor
 
-    # Transpose to get H
-    H = H_T.copy()
-    H_P_x = HT_P_x.copy()
-    H_P_y = HT_P_y.copy()
-    H_P_z = HT_P_z.copy()
+    # Transpose to get H (use direct assignment)
+    H = H_T
+    H_P_x = HT_P_x
+    H_P_y = HT_P_y
+    H_P_z = HT_P_z
 
     print(f"  end: compute_H_matrices_sparse_3d", flush=True)
 
     return H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z
 
 
-def batch_matrix_inverse(matrices, dtype=np.float32):
+def batch_matrix_inverse(matrices):
     """Compute inverses of multiple matrices in a batch.
 
     Args:
         matrices: Array of shape (n_matrices, dim, dim)
-        dtype: Data type for computations
 
     Returns:
         Array of inverted matrices with same shape
     """
-    n_matrices = matrices.shape[0]
-    dim = matrices.shape[1]
-
-    # Pre-allocate output
-    inv_matrices = np.zeros_like(matrices, dtype=dtype)
-
-    # Batch process using vectorized operations where possible
-    # For small matrices (3x3 or 4x4), we could use analytical formulas
-    # For now, use loop but could optimize further
-    for i in range(n_matrices):
-        inv_matrices[i] = np.linalg.inv(matrices[i].astype(np.float64)).astype(dtype)
-
-    return inv_matrices
+    # Use NumPy's native batched matrix inverse
+    # np.linalg.inv supports arrays with shape (..., M, M)
+    # and computes the inverse for each matrix in the batch
+    return np.linalg.inv(matrices)
 
 
 def shape_grad_shape_func_vectorized(
@@ -158,7 +148,7 @@ def shape_grad_shape_func_vectorized(
     M_P_z=None,
     HT3=None,
     phi_P_z_nonzerovalue_data=None,
-    dtype=np.float32,
+    dtype=np.float64,
 ):
     """Vectorized version of shape_grad_shape_func.
 
@@ -174,8 +164,8 @@ def shape_grad_shape_func_vectorized(
     # Convert to numpy arrays if needed - handle lists of floats
     # First convert to float to handle any numeric type, then to int
     try:
-        phi_nonzero_index_row = np.asarray(phi_nonzero_index_row).astype(np.int32)
-        phi_nonzero_index_column = np.asarray(phi_nonzero_index_column).astype(np.int32)
+        phi_nonzero_index_row = np.asarray(phi_nonzero_index_row).astype(int)
+        phi_nonzero_index_column = np.asarray(phi_nonzero_index_column).astype(int)
         phi_nonzerovalue_data = np.asarray(phi_nonzerovalue_data, dtype=dtype)
     except (ValueError, TypeError) as e:
         print(f"Error converting sparse indices to arrays: {e}")
@@ -199,8 +189,8 @@ def shape_grad_shape_func_vectorized(
     n_unique_gauss = len(unique_gauss_points)
 
     # Batch compute M inverses for all unique Gauss points
-    M_subset = M[unique_gauss_points].astype(dtype)
-    M_inv_all = batch_matrix_inverse(M_subset, dtype)
+    M_subset = M[unique_gauss_points]
+    M_inv_all = batch_matrix_inverse(M_subset)
 
     # Create mapping from global to local indices
     gauss_to_local = {g: i for i, g in enumerate(unique_gauss_points)}
@@ -212,7 +202,7 @@ def shape_grad_shape_func_vectorized(
     M_inv_sparse = M_inv_all[M_inv_indices]  # (num_non_zero_phi_a, n_dim, n_dim)
 
     # Compute H matrices for all sparse pairs
-    H_scaling_factor = dtype(1.0e-6)
+    H_scaling_factor = 1.0e-6
 
     if is_3d:
         (H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z) = (
@@ -240,15 +230,6 @@ def shape_grad_shape_func_vectorized(
         )
         HT_P_z = None
         H_P_z = None
-
-    # Convert HT0, HT1, HT2, HT3 to proper dtype
-    HT0 = HT0.astype(dtype)
-    if HT1 is not None:
-        HT1 = HT1.astype(dtype)
-    if HT2 is not None:
-        HT2 = HT2.astype(dtype)
-    if HT3 is not None and is_3d:
-        HT3 = HT3.astype(dtype)
 
     # Vectorized computation of shape functions
     # shape_func = HT0 @ M_inv @ H * phi
@@ -283,8 +264,8 @@ def shape_grad_shape_func_vectorized(
         # Direct method - more complex, involves M_P_x and M_P_y
 
         # Pre-compute M_P_x and M_P_y for relevant Gauss points
-        M_P_x_sparse = M_P_x[phi_nonzero_index_row].astype(dtype)
-        M_P_y_sparse = M_P_y[phi_nonzero_index_row].astype(dtype)
+        M_P_x_sparse = M_P_x[phi_nonzero_index_row]
+        M_P_y_sparse = M_P_y[phi_nonzero_index_row]
 
         # Compute M_inv_P_x = -M_inv @ M_P_x @ M_inv
         M_inv_P_x = -np.einsum(
@@ -316,7 +297,7 @@ def shape_grad_shape_func_vectorized(
         grad_shape_func_y_value = term1_y + term2_y + term3_y
 
         if is_3d and M_P_z is not None:
-            M_P_z_sparse = M_P_z[phi_nonzero_index_row].astype(dtype)
+            M_P_z_sparse = M_P_z[phi_nonzero_index_row]
             M_inv_P_z = -np.einsum(
                 "nij,njk,nkl->nil", M_inv_sparse, M_P_z_sparse, M_inv_sparse
             )
