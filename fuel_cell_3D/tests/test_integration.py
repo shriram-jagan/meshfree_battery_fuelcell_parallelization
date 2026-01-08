@@ -63,7 +63,7 @@ class TestIntegration:
             assert sp.issparse(D_matrix)
 
             # Check symmetry
-            D_dense = D_matrix.toarray()
+            D_dense = D_matrix.todense()
             np.testing.assert_array_almost_equal(D_dense, D_dense.T)
 
     def test_mechanical_stiffness_workflow(self, sample_config):
@@ -108,7 +108,7 @@ class TestIntegration:
         assert sp.issparse(K_matrix)
 
         # Stiffness matrix should be symmetric
-        K_dense = K_matrix.toarray()
+        K_dense = K_matrix.todense()
         np.testing.assert_array_almost_equal(K_dense, K_dense.T, decimal=10)
 
         # Step 3: Create force matrix

@@ -33,7 +33,7 @@ DELTA_POINT_SOURCE = (
 ENABLE_PLOTTING = True  # Set to True to show plots, False to disable all plotting
 
 # Control whether to enable file I/O operations (saving data to files)
-ENABLE_FILE_IO = True  # Set to True to save output files, False to disable file I/O
+ENABLE_FILE_IO = False  # Set to True to save output files, False to disable file I/O
 
 # ==============================================================================
 # NUMERICAL METHODS
