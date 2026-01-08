@@ -2,10 +2,13 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: [main, master, docs/add-sphinx-documentation]
+    branches: [main, master]
     paths:
       - 'fuel_cell_3D/docs/**'
       - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'fuel_cell_3D/docs/**'
   workflow_dispatch:  # Allow manual trigger
 
 permissions:
@@ -44,6 +47,8 @@ jobs:
           path: fuel_cell_3D/docs/_build/html
 
   deploy:
+    # Only deploy from main/master branches
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
