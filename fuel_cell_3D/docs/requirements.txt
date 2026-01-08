@@ -1,0 +1,4 @@
+# Minimal requirements for building documentation
+# Install with: pip install -r docs/requirements.txt
+
+sphinx>=5.0
