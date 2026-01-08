@@ -1,3 +1,18 @@
+"""
+Diffusion matrix assembly module using Nitsche's method.
+
+This module assembles the stiffness matrix and force vector for the
+steady-state diffusion equation with Dirichlet boundary conditions
+enforced using Nitsche's method (weak enforcement).
+
+The discretized system is: K @ c = f
+
+where K = K1 + K2 + K3:
+    - K1: Domain diffusion integral
+    - K2: Flux consistency term on boundary
+    - K3: Nitsche penalty term on boundary
+"""
+
 from typing import Optional, Tuple
 
 from common import csr_array, np
@@ -27,6 +42,55 @@ def diffusion_matrix_fuel_cell(
     grad_shape_func_b_z_times_det_J_b_time_weight: Optional[csr_array] = None,
     normal_vector_z: Optional[np.ndarray] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Assemble diffusion stiffness matrix and force vector using Nitsche's method.
+
+    This function constructs the linear system for the steady-state diffusion
+    equation with Dirichlet boundary conditions enforced weakly via Nitsche's
+    method. Used for delta function (point) source terms.
+
+    Parameters
+    ----------
+    dimension : int
+        Problem dimension (2 or 3).
+    point_or_line_source : np.ndarray
+        Source term values at source points, shape (n_source,).
+    shape_func_point_or_line_nodes : csr_array
+        Shape functions at source points, shape (n_source, n_nodes).
+    g_diretchlet : np.ndarray
+        Dirichlet boundary values, shape (n_gauss_boundary,).
+    beta_Nitsche : np.ndarray
+        Nitsche penalty parameter, shape (n_gauss_boundary,).
+    normal_vector_x, normal_vector_y : np.ndarray
+        Outward normal components at boundary Gauss points.
+    global_diffusion : np.ndarray
+        Diffusion coefficient at domain Gauss points.
+    grad_shape_func_x, grad_shape_func_y : csr_array
+        Shape function gradients, shape (n_gauss, n_nodes).
+    grad_shape_func_x_times_det_J_time_weight : csr_array
+        Weighted gradient matrices for integration, shape (n_gauss, n_nodes).
+    shape_func_b : csr_array
+        Shape functions at boundary Gauss points.
+    shape_func_b_times_det_J_b_time_weight : csr_array
+        Weighted boundary shape functions.
+    grad_shape_func_b_*_times_det_J_b_time_weight : csr_array
+        Weighted boundary gradient matrices.
+    shape_func_inter_times_det_J_b_time_weight : csr_array, optional
+        Shape functions at interface for interface source.
+    interface_source : np.ndarray, optional
+        Interface source term values.
+    grad_shape_func_z : csr_array, optional
+        z-gradient of shape functions (3D only).
+    normal_vector_z : np.ndarray, optional
+        z-component of outward normal (3D only).
+
+    Returns
+    -------
+    K : np.ndarray
+        Stiffness matrix, shape (n_nodes, n_nodes).
+    f : np.ndarray
+        Force vector, shape (n_nodes,).
+    """
 
     # print('K1')
     K1 = (

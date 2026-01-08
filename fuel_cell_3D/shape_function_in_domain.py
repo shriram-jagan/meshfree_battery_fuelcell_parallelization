@@ -1,3 +1,21 @@
+"""
+RKPM shape function computation module.
+
+This module computes Reproducing Kernel Particle Method (RKPM) shape functions
+and their derivatives. The RKPM shape function for node I at point x is:
+
+    Ψ_I(x) = H^T(0) M^{-1}(x) H(x - x_I) φ(z)
+
+where:
+    - H(x) is the polynomial basis vector [1, x/h, y/h, z/h]^T
+    - M(x) is the moment matrix (ensures reproduction of polynomials)
+    - φ(z) is the cubic B-spline kernel function
+    - z = ||x - x_I|| / a_I is the normalized distance
+
+The module provides both original loop-based and optimized vectorized
+implementations for performance.
+"""
+
 from common import np
 
 # Try to import the vectorized versions if available
@@ -540,17 +558,74 @@ def compute_phi_M(
     IM_RKPM,
     single_grain,
     M_P_z=None,
-    use_vectorized=True,  # New parameter to control vectorization
-    dtype=np.float64,  # Data type for vectorized computations
+    use_vectorized=True,
+    dtype=np.float64,
 ):
-    """Main compute_phi_M function that delegates to specialized functions based on conditions.
+    """
+    Compute RKPM kernel values φ and moment matrices M at all Gauss points.
 
-    Args:
-        use_vectorized: If True and vectorized version is available, use the vectorized
-                       implementation for ~30-50x speedup. Defaults to True.
-        dtype: Data type for vectorized computations (np.float32 or np.float64).
-               np.float32 (default) uses 50% less memory but may have lower precision.
-               np.float64 provides higher precision but doubles memory usage.
+    This function evaluates the cubic B-spline kernel for all Gauss point-node
+    pairs within the support radius (z ≤ 1) and accumulates the moment matrices
+    needed for shape function computation.
+
+    The moment matrix at Gauss point x is:
+
+        M(x) = Σ_I H(x - x_I) H^T(x - x_I) φ(z_I)
+
+    where the sum is over all nodes I with z_I ≤ 1.
+
+    Parameters
+    ----------
+    x_G : np.ndarray
+        Gauss point coordinates, shape (n_gauss, dim).
+    Gauss_grain_id : np.ndarray
+        Phase ID at each Gauss point, shape (n_gauss,).
+    x_nodes : np.ndarray
+        Node coordinates, shape (n_nodes, dim).
+    nodes_grain_id : np.ndarray
+        Phase ID at each node, shape (n_nodes,).
+    a : np.ndarray
+        Support radius for each node, shape (n_nodes,).
+    M : np.ndarray
+        Moment matrix array to accumulate, shape (n_gauss, basis, basis).
+        For 3D: basis=4 (linear), For 2D: basis=3.
+    M_P_x, M_P_y : np.ndarray
+        Partial derivatives of M w.r.t. x, y. Same shape as M.
+    num_interface_segments : int
+        Number of interface segments (for IM-RKPM method).
+    interface_nodes : np.ndarray
+        Coordinates of nodes on interfaces.
+    BxByCxCy : np.ndarray
+        Interface segment endpoint coordinates.
+    IM_RKPM : str
+        "True" for interface-modified RKPM, "False" otherwise.
+    single_grain : str
+        "True" for single grain, "False" for multi-phase.
+    M_P_z : np.ndarray, optional
+        Partial derivative of M w.r.t. z (3D only).
+    use_vectorized : bool, optional
+        If True, use optimized vectorized implementation. Default True.
+    dtype : numpy dtype, optional
+        Data type for computations. Default np.float64.
+
+    Returns
+    -------
+    phi_nonzero_index_row : np.ndarray
+        Gauss point indices for non-zero kernel values, shape (n_nnz,).
+    phi_nonzero_index_column : np.ndarray
+        Node indices for non-zero kernel values, shape (n_nnz,).
+    phi_nonzerovalue_data : np.ndarray
+        Kernel values φ(z) at non-zero pairs, shape (n_nnz,).
+    phi_P_x_nonzerovalue_data : np.ndarray
+        ∂φ/∂x at non-zero pairs, shape (n_nnz,).
+    phi_P_y_nonzerovalue_data : np.ndarray
+        ∂φ/∂y at non-zero pairs, shape (n_nnz,).
+    phi_P_z_nonzerovalue_data : np.ndarray
+        ∂φ/∂z at non-zero pairs (3D), shape (n_nnz,).
+    M : np.ndarray
+        Updated moment matrix, shape (n_gauss, basis, basis).
+    M_P_x, M_P_y, M_P_z : np.ndarray
+        Updated moment matrix derivatives.
     """
 
     if single_grain == "False" and IM_RKPM == "True":
@@ -626,16 +701,74 @@ def shape_grad_shape_func(
     M_P_z=None,
     HT3=None,
     phi_P_z_nonzerovalue_data=None,
-    use_vectorized=True,  # New parameter to control vectorization
-    dtype=np.float64,  # Data type for vectorized computations
+    use_vectorized=True,
+    dtype=np.float64,
 ):
-    """Compute shape functions and their gradients.
+    """
+    Compute RKPM shape functions and their gradients.
 
-    Args:
-        use_vectorized: If True and vectorized version is available, use the vectorized
-                       implementation for 30-75x speedup. Defaults to True.
-        dtype: Data type for vectorized computations (np.float32 or np.float64).
-               np.float32 (default) uses less memory, np.float64 provides higher precision.
+    Evaluates the shape function Ψ_I(x) and its spatial derivatives for all
+    non-zero Gauss-node pairs. The shape function is:
+
+        Ψ_I(x) = H^T(0) M^{-1}(x) H(x - x_I) φ(z)
+
+    Gradients are computed using the direct differentiation method:
+
+        ∂Ψ/∂x = H^T M^{-1} H ∂φ/∂x + H^T ∂M^{-1}/∂x H φ + H^T M^{-1} ∂H/∂x φ
+
+    Parameters
+    ----------
+    x_G : np.ndarray
+        Gauss point coordinates, shape (n_gauss, dim).
+    x_nodes : np.ndarray
+        Node coordinates, shape (n_nodes, dim).
+    num_non_zero_phi_a : int
+        Number of non-zero kernel values.
+    HT0 : np.ndarray
+        Polynomial basis at origin [1, 0, 0, 0], shape (basis,).
+    M : np.ndarray
+        Moment matrices at Gauss points, shape (n_gauss, basis, basis).
+    M_P_x, M_P_y : np.ndarray
+        Moment matrix derivatives, same shape as M.
+    differential_method : str
+        "direct" for direct differentiation, "implicite" for implicit.
+    HT1, HT2 : np.ndarray
+        Basis vectors for implicit method derivatives.
+    phi_nonzerovalue_data : np.ndarray
+        Non-zero kernel values, shape (n_nnz,).
+    phi_P_*_nonzerovalue_data : np.ndarray
+        Kernel derivatives, shape (n_nnz,).
+    phi_nonzero_index_row, phi_nonzero_index_column : np.ndarray
+        Sparse indices for non-zero pairs, shape (n_nnz,).
+    det_J_time_weight : np.ndarray
+        Jacobian × Gauss weight at each Gauss point, shape (n_gauss,).
+    IM_RKPM : str
+        "True" for interface-modified RKPM.
+    M_P_z : np.ndarray, optional
+        Moment matrix z-derivative (3D).
+    HT3 : np.ndarray, optional
+        Basis vector for implicit z-derivative.
+    phi_P_z_nonzerovalue_data : np.ndarray, optional
+        Kernel z-derivative values.
+    use_vectorized : bool, optional
+        Use vectorized implementation. Default True.
+    dtype : numpy dtype, optional
+        Data type for computations. Default np.float64.
+
+    Returns
+    -------
+    shape_func_value : np.ndarray
+        Shape function values, shape (n_nnz,).
+    shape_func_times_det_J_time_weight_value : np.ndarray
+        Weighted shape functions, shape (n_nnz,).
+    grad_shape_func_x_value : np.ndarray
+        ∂Ψ/∂x values, shape (n_nnz,).
+    grad_shape_func_y_value : np.ndarray
+        ∂Ψ/∂y values, shape (n_nnz,).
+    grad_shape_func_z_value : np.ndarray
+        ∂Ψ/∂z values (3D), shape (n_nnz,).
+    grad_shape_func_*_times_det_J_time_weight_value : np.ndarray
+        Weighted gradient values, shape (n_nnz,).
     """
 
     # Use vectorized version if available and requested

@@ -1,3 +1,21 @@
+"""
+Mechanical stiffness matrix assembly for 3D linear elasticity.
+
+This module assembles the mechanical stiffness matrix for 3D elasticity
+problems in solid oxide fuel cells. It includes:
+
+- Construction of the 6x6 elasticity tensor (Voigt notation)
+- Rotation for anisotropic materials
+- Damage model degradation
+- Full 3x3 block stiffness matrix assembly
+
+The mechanical stiffness matrix relates nodal displacements to forces:
+
+    K_mech @ u = f
+
+where u = [u_x, u_y, u_z] and K_mech is a 3x3 block matrix.
+"""
+
 from typing import Tuple
 
 import config
@@ -12,7 +30,42 @@ def mechanical_C_tensor_3d(
     gauss_angle: np.ndarray,
     gauss_rotation_axis: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Construct the 3D elasticity tensor with rotation and damage.
 
+    Computes the 6x6 elasticity tensor in Voigt notation for each Gauss point,
+    including material rotation and damage degradation.
+
+    The elasticity tensor relates stress to strain:
+
+        σ = C : (ε - ε*)
+
+    where ε* is the chemical expansion strain.
+
+    Parameters
+    ----------
+    num_gauss_points_in_domain : int
+        Number of Gauss points in the domain.
+    D_damage : np.ndarray
+        Damage variable at each Gauss point, shape (n_gauss, 1).
+        Value 0 = undamaged, 1 = fully damaged.
+    lambda_mechanical : np.ndarray
+        First Lamé constant (λ) at each Gauss point.
+    mu : np.ndarray
+        Second Lamé constant (shear modulus, μ) at each Gauss point.
+    gauss_angle : np.ndarray
+        Rotation angle at each Gauss point for anisotropic materials.
+    gauss_rotation_axis : np.ndarray
+        Rotation axis vectors, shape (n_gauss, 3).
+
+    Returns
+    -------
+    C : np.ndarray
+        Elasticity tensor, shape (6, 6, n_gauss, 1).
+        Components are in Voigt notation: [11, 22, 33, 23, 13, 12].
+    T_c : np.ndarray
+        Rotation transformation matrix, shape (6, 6, n_gauss).
+    """
     D_damage[D_damage > 0.9] = 0.9  # c = max(1-c_no_damage, 0.1)
 
     C11_ini = lambda_mechanical + 2 * mu  # c11 before rotation
@@ -296,6 +349,49 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
     grad_shape_func_b_z_electrolyte: csr_array,
     grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte: csr_array,
 ) -> csr_array:
+    """
+    Assemble the 3D mechanical stiffness matrix for fuel cell simulation.
+
+    Constructs the full 3×3 block stiffness matrix for 3D linear elasticity
+    using RKPM shape functions. Includes both domain integrals and boundary
+    terms (Nitsche's method for fixed displacement BCs).
+
+    The stiffness matrix structure:
+
+        K_mech = | K11  K12  K13 |
+                 | K21  K22  K23 |
+                 | K31  K32  K33 |
+
+    where each Kij block is (n_nodes × n_nodes) and couples displacement
+    components i and j.
+
+    Parameters
+    ----------
+    C : np.ndarray
+        Elasticity tensor, shape (6, 6, n_gauss, 1).
+    num_gauss_points_in_domain : int
+        Number of Gauss points in the domain.
+    grad_shape_func_x, grad_shape_func_y, grad_shape_func_z : csr_array
+        Shape function gradients in domain, each (n_gauss, n_nodes).
+    grad_shape_func_*_times_det_J_time_weight : csr_array
+        Weighted gradient matrices for integration.
+    beta_Nitsche : np.ndarray
+        Nitsche penalty parameter at boundary points.
+    shape_func_fixed_point : csr_array
+        Shape functions at fixed displacement points.
+    normal_vector_*_electrolyte : np.ndarray
+        Normal vector components at boundary Gauss points.
+    shape_func_b_electrolyte : csr_array
+        Shape functions at boundary Gauss points.
+    grad_shape_func_b_*_electrolyte : csr_array
+        Gradient matrices at boundary Gauss points.
+
+    Returns
+    -------
+    K_mechanical : csr_array
+        Mechanical stiffness matrix, shape (3*n_nodes, 3*n_nodes).
+        Ordering: [u_x nodes, u_y nodes, u_z nodes].
+    """
 
     num_gauss_points_on_boundary = np.shape(shape_func_b_electrolyte.todense())[0]
     num_gauss_points_on_fixed_line = np.shape(shape_func_fixed_point.todense())[0]
