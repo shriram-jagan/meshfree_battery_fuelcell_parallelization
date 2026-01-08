@@ -2,9 +2,9 @@ name: Deploy Documentation
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, docs/add-sphinx-documentation]
     paths:
-      - 'docs/**'
+      - 'fuel_cell_3D/docs/**'
       - '.github/workflows/docs.yml'
   workflow_dispatch:  # Allow manual trigger
 
@@ -35,13 +35,13 @@ jobs:
       
       - name: Build documentation
         run: |
-          cd docs
+          cd fuel_cell_3D/docs
           make html
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/_build/html
+          path: fuel_cell_3D/docs/_build/html
 
   deploy:
     environment:
