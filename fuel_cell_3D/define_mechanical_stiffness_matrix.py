@@ -1,14 +1,17 @@
-from common import np, sp
+from typing import Tuple
+
+import config
+from common import bmat, csr_array, np, sp
 
 
 def mechanical_C_tensor_3d(
-    num_gauss_points_in_domain,
-    D_damage,
-    lambda_mechanical,
-    mu,
-    gauss_angle,
-    gauss_rotation_axis,
-):
+    num_gauss_points_in_domain: int,
+    D_damage: np.ndarray,
+    lambda_mechanical: np.ndarray,
+    mu: np.ndarray,
+    gauss_angle: np.ndarray,
+    gauss_rotation_axis: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
 
     D_damage[D_damage > 0.9] = 0.9  # c = max(1-c_no_damage, 0.1)
 
@@ -264,38 +267,38 @@ def mechanical_C_tensor_3d(
 
 
 def mechanical_stiffness_matrix_3d_fuel_cell(
-    C,
-    num_gauss_points_in_domain,
-    grad_shape_func_x_times_det_J_time_weight,
-    grad_shape_func_x,
-    grad_shape_func_y_times_det_J_time_weight,
-    grad_shape_func_y,
-    grad_shape_func_z_times_det_J_time_weight,
-    grad_shape_func_z,
-    beta_Nitsche,
-    shape_func_fixed_point,
-    shape_func_times_det_J_time_weight_fixed_point,
-    grad_shape_func_x_fixed_point,
-    grad_shape_func_x_times_det_J_time_weight_fixed_point,
-    grad_shape_func_y_fixed_point,
-    grad_shape_func_y_times_det_J_time_weight_fixed_point,
-    grad_shape_func_z_fixed_point,
-    grad_shape_func_z_times_det_J_time_weight_fixed_point,
-    normal_vector_x_electrolyte,
-    normal_vector_y_electrolyte,
-    normal_vector_z_electrolyte,
-    shape_func_b_electrolyte,
-    shape_func_b_times_det_J_b_time_weight_electrolyte,
-    grad_shape_func_b_x_electrolyte,
-    grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte,
-    grad_shape_func_b_y_electrolyte,
-    grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte,
-    grad_shape_func_b_z_electrolyte,
-    grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte,
-):
+    C: np.ndarray,
+    num_gauss_points_in_domain: int,
+    grad_shape_func_x_times_det_J_time_weight: csr_array,
+    grad_shape_func_x: csr_array,
+    grad_shape_func_y_times_det_J_time_weight: csr_array,
+    grad_shape_func_y: csr_array,
+    grad_shape_func_z_times_det_J_time_weight: csr_array,
+    grad_shape_func_z: csr_array,
+    beta_Nitsche: np.ndarray,
+    shape_func_fixed_point: csr_array,
+    shape_func_times_det_J_time_weight_fixed_point: csr_array,
+    grad_shape_func_x_fixed_point: csr_array,
+    grad_shape_func_x_times_det_J_time_weight_fixed_point: csr_array,
+    grad_shape_func_y_fixed_point: csr_array,
+    grad_shape_func_y_times_det_J_time_weight_fixed_point: csr_array,
+    grad_shape_func_z_fixed_point: csr_array,
+    grad_shape_func_z_times_det_J_time_weight_fixed_point: csr_array,
+    normal_vector_x_electrolyte: np.ndarray,
+    normal_vector_y_electrolyte: np.ndarray,
+    normal_vector_z_electrolyte: np.ndarray,
+    shape_func_b_electrolyte: csr_array,
+    shape_func_b_times_det_J_b_time_weight_electrolyte: csr_array,
+    grad_shape_func_b_x_electrolyte: csr_array,
+    grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte: csr_array,
+    grad_shape_func_b_y_electrolyte: csr_array,
+    grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte: csr_array,
+    grad_shape_func_b_z_electrolyte: csr_array,
+    grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte: csr_array,
+) -> csr_array:
 
-    num_gauss_points_on_boundary = np.shape(shape_func_b_electrolyte.toarray())[0]
-    num_gauss_points_on_fixed_line = np.shape(shape_func_fixed_point.toarray())[0]
+    num_gauss_points_on_boundary = np.shape(shape_func_b_electrolyte.todense())[0]
+    num_gauss_points_on_fixed_line = np.shape(shape_func_fixed_point.todense())[0]
 
     C11 = C[0, 0].reshape(
         num_gauss_points_in_domain,
@@ -411,917 +414,655 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
         num_gauss_points_in_domain,
     )
 
+    # C11, C22, C33, C44, C55, C66, C12, C21, C13, C31, C23 and C32
+    # are non-zero while the rest are zero and doesn't need to be added
+
     K11_mechanical_doamin_int = (
-        (sp.diags(C11).dot(grad_shape_func_x_times_det_J_time_weight)).T
+        (
+            sp.dia_array(
+                (C11.reshape(1, -1), 0), shape=(len(C11), len(C11)), dtype=C11.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_x
-        + (sp.diags(C14).dot(grad_shape_func_x_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C44.reshape(1, -1), 0), shape=(len(C44), len(C44)), dtype=C44.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_y
-        + (sp.diags(C15).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C41).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C44).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C45).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C51).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C54).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C55).dot(grad_shape_func_z_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C55.reshape(1, -1), 0), shape=(len(C55), len(C55)), dtype=C55.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_z
     )
 
     K12_mechanical_doamin_int = (
-        (sp.diags(C12).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C14).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C16).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C42).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C44).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C46).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C52).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C54).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C56).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-    )
+        sp.dia_array(
+            (C12.reshape(1, -1), 0), shape=(len(C12), len(C12)), dtype=C12.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight)
+    ).T @ grad_shape_func_y + (
+        sp.dia_array(
+            (C44.reshape(1, -1), 0), shape=(len(C44), len(C44)), dtype=C44.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight)
+    ).T @ grad_shape_func_x
 
     K13_mechanical_doamin_int = (
-        (sp.diags(C13).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C15).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C16).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C43).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C45).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C46).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C53).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C55).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C56).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-    )
+        sp.dia_array(
+            (C13.reshape(1, -1), 0), shape=(len(C13), len(C13)), dtype=C13.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight)
+    ).T @ grad_shape_func_z + (
+        sp.dia_array(
+            (C55.reshape(1, -1), 0), shape=(len(C55), len(C55)), dtype=C55.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight)
+    ).T @ grad_shape_func_x
 
     K21_mechanical_doamin_int = (
-        (sp.diags(C21).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C24).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C25).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C41).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C44).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C45).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C61).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C64).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C65).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-    )
+        sp.dia_array(
+            (C21.reshape(1, -1), 0), shape=(len(C21), len(C21)), dtype=C21.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight)
+    ).T @ grad_shape_func_x + (
+        sp.dia_array(
+            (C44.reshape(1, -1), 0), shape=(len(C44), len(C44)), dtype=C44.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight)
+    ).T @ grad_shape_func_y
 
     K22_mechanical_doamin_int = (
-        (sp.diags(C22).dot(grad_shape_func_y_times_det_J_time_weight)).T
+        (
+            sp.dia_array(
+                (C22.reshape(1, -1), 0), shape=(len(C22), len(C22)), dtype=C22.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_y
-        + (sp.diags(C24).dot(grad_shape_func_y_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C44.reshape(1, -1), 0), shape=(len(C44), len(C44)), dtype=C44.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_x
-        + (sp.diags(C26).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C42).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C44).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C46).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C62).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C64).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C66).dot(grad_shape_func_z_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C66.reshape(1, -1), 0), shape=(len(C66), len(C66)), dtype=C66.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_z
     )
 
     K23_mechanical_doamin_int = (
-        (sp.diags(C23).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C25).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C26).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C43).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C45).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C46).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C63).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C65).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C66).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-    )
+        sp.dia_array(
+            (C23.reshape(1, -1), 0), shape=(len(C23), len(C23)), dtype=C23.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight)
+    ).T @ grad_shape_func_z + (
+        sp.dia_array(
+            (C66.reshape(1, -1), 0), shape=(len(C66), len(C66)), dtype=C66.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight)
+    ).T @ grad_shape_func_y
 
     K31_mechanical_doamin_int = (
-        (sp.diags(C31).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C34).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C35).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C51).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C54).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C55).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C61).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C64).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C65).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-    )
+        sp.dia_array(
+            (C31.reshape(1, -1), 0), shape=(len(C31), len(C31)), dtype=C31.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight)
+    ).T @ grad_shape_func_x + (
+        sp.dia_array(
+            (C55.reshape(1, -1), 0), shape=(len(C55), len(C55)), dtype=C55.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight)
+    ).T @ grad_shape_func_z
 
     K32_mechanical_doamin_int = (
-        (sp.diags(C32).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C34).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C36).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C52).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C54).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C56).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C62).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C64).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C66).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-    )
+        sp.dia_array(
+            (C32.reshape(1, -1), 0), shape=(len(C32), len(C32)), dtype=C32.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight)
+    ).T @ grad_shape_func_y + (
+        sp.dia_array(
+            (C66.reshape(1, -1), 0), shape=(len(C66), len(C66)), dtype=C66.dtype
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight)
+    ).T @ grad_shape_func_z
 
     K33_mechanical_doamin_int = (
-        (sp.diags(C33).dot(grad_shape_func_z_times_det_J_time_weight)).T
+        (
+            sp.dia_array(
+                (C33.reshape(1, -1), 0), shape=(len(C33), len(C33)), dtype=C33.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_z
-        + (sp.diags(C35).dot(grad_shape_func_z_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C55.reshape(1, -1), 0), shape=(len(C55), len(C55)), dtype=C55.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_x
-        + (sp.diags(C36).dot(grad_shape_func_z_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C53).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C55).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C56).dot(grad_shape_func_x_times_det_J_time_weight)).T
-        @ grad_shape_func_y
-        + (sp.diags(C63).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_z
-        + (sp.diags(C65).dot(grad_shape_func_y_times_det_J_time_weight)).T
-        @ grad_shape_func_x
-        + (sp.diags(C66).dot(grad_shape_func_y_times_det_J_time_weight)).T
+        + (
+            sp.dia_array(
+                (C66.reshape(1, -1), 0), shape=(len(C66), len(C66)), dtype=C66.dtype
+            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight)
+        ).T
         @ grad_shape_func_y
     )
 
     K11_mechanical_line_int = (
-        (shape_func_times_det_J_time_weight_fixed_point.multiply(beta_Nitsche)).T
+        (
+            shape_func_times_det_J_time_weight_fixed_point
+            @ sp.dia_array(
+                (beta_Nitsche.reshape(1, -1), 0),
+                shape=(len(beta_Nitsche), len(beta_Nitsche)),
+                dtype=beta_Nitsche.dtype,
+            ).tocsr()
+        ).T
         @ shape_func_fixed_point
         - (
-            sp.diags(C11[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C11[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C11[:num_gauss_points_on_fixed_line]),
+                    len(C11[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C11[:num_gauss_points_on_fixed_line].dtype,
             )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
         - (
-            sp.diags(C14[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C44[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C44[:num_gauss_points_on_fixed_line]),
+                    len(C44[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C44[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C15[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C41[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
         - (
-            sp.diags(C44[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C55[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C55[:num_gauss_points_on_fixed_line]),
+                    len(C55[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C55[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C51[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C54[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C55[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
     )
+
+    # TODO:
+    # SJ Wed Jan  7 04:45:19 PM PST 2026
+
     K12_mechanical_line_int = (
-        -(
-            sp.diags(C14[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C44[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C21[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C24[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C25[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C61[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C65[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C44[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C44[:num_gauss_points_on_fixed_line]),
+                len(C44[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C44[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte)) - (
+        sp.dia_array(
+            (C21[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C21[:num_gauss_points_on_fixed_line]),
+                len(C21[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C21[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_y_electrolyte)
     )
 
     K12_mechanical_boundary_int = (
-        -(
-            sp.diags(C14[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C44[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C21[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C24[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C25[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C61[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C65[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C44[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+            shape=(
+                len(C44[:num_gauss_points_on_boundary]),
+                len(C44[:num_gauss_points_on_boundary]),
+            ),
+            dtype=C44[:num_gauss_points_on_boundary].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte)
+    ).T @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte)) - (
+        sp.dia_array(
+            (C21[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+            shape=(
+                len(C21[:num_gauss_points_on_boundary]),
+                len(C21[:num_gauss_points_on_boundary]),
+            ),
+            dtype=C21[:num_gauss_points_on_boundary].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte)
+    ).T @ (
+        shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte)
     )
+
     K13_mechanical_line_int = (
-        -(
-            sp.diags(C51[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C54[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C55[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C61[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C65[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C31[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C34[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C35[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C55[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C55[:num_gauss_points_on_fixed_line]),
+                len(C55[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C55[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte)) - (
+        sp.dia_array(
+            (C31[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C31[:num_gauss_points_on_fixed_line]),
+                len(C31[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C31[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_z_electrolyte)
     )
 
     K21_mechanical_line_int = (
-        -(
-            sp.diags(C12[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C14[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C16[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C42[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C44[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C52[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C54[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C56[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C12[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C12[:num_gauss_points_on_fixed_line]),
+                len(C12[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C12[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte)) - (
+        sp.dia_array(
+            (C44[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C44[:num_gauss_points_on_fixed_line]),
+                len(C44[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C44[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_y_electrolyte)
     )
 
     K22_mechanical_line_int = (
-        (shape_func_times_det_J_time_weight_fixed_point.multiply(beta_Nitsche)).T
+        (
+            shape_func_times_det_J_time_weight_fixed_point
+            @ sp.dia_array(
+                (beta_Nitsche.reshape(1, -1), 0),
+                shape=(len(beta_Nitsche), len(beta_Nitsche)),
+                dtype=beta_Nitsche.dtype,
+            ).tocsr()
+        ).T
         @ shape_func_fixed_point
         - (
-            sp.diags(C42[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C44[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C44[:num_gauss_points_on_fixed_line]),
+                    len(C44[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C44[:num_gauss_points_on_fixed_line].dtype,
             )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
         - (
-            sp.diags(C44[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C22[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C22[:num_gauss_points_on_fixed_line]),
+                    len(C22[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C22[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C22[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
         - (
-            sp.diags(C24[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C66[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C66[:num_gauss_points_on_fixed_line]),
+                    len(C66[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C66[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C26[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C62[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
     )
 
     K22_mechanical_boundary_int = (
-        (shape_func_b_times_det_J_b_time_weight_electrolyte.multiply(beta_Nitsche)).T
+        (
+            shape_func_b_times_det_J_b_time_weight_electrolyte
+            @ sp.dia_array(
+                (beta_Nitsche.reshape(1, -1), 0),
+                shape=(len(beta_Nitsche), len(beta_Nitsche)),
+                dtype=beta_Nitsche.dtype,
+            ).tocsr()
+        ).T
         @ shape_func_b_electrolyte
         - (
-            sp.diags(C42[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
+            sp.dia_array(
+                (C44[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+                shape=(
+                    len(C44[:num_gauss_points_on_boundary]),
+                    len(C44[:num_gauss_points_on_boundary]),
+                ),
+                dtype=C44[:num_gauss_points_on_boundary].dtype,
             )
+            .tocsr()
+            .dot(grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte)
         ).T
         @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
         - (
-            sp.diags(C44[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
+            sp.dia_array(
+                (C22[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+                shape=(
+                    len(C22[:num_gauss_points_on_boundary]),
+                    len(C22[:num_gauss_points_on_boundary]),
+                ),
+                dtype=C22[:num_gauss_points_on_boundary].dtype,
             )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C22[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
+            .tocsr()
+            .dot(grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte)
         ).T
         @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
         - (
-            sp.diags(C24[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
+            sp.dia_array(
+                (C66[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+                shape=(
+                    len(C66[:num_gauss_points_on_boundary]),
+                    len(C66[:num_gauss_points_on_boundary]),
+                ),
+                dtype=C66[:num_gauss_points_on_boundary].dtype,
             )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C26[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C62[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
+            .tocsr()
+            .dot(grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte)
         ).T
         @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
     )
+
     K23_mechanical_line_int = (
-        -(
-            sp.diags(C52[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C54[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C56[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C62[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C64[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C32[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C34[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C36[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C66[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C66[:num_gauss_points_on_fixed_line]),
+                len(C66[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C66[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte)) - (
+        sp.dia_array(
+            (C32[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C32[:num_gauss_points_on_fixed_line]),
+                len(C32[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C32[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_z_electrolyte)
     )
 
     K31_mechanical_line_int = (
-        -(
-            sp.diags(C13[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C15[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C16[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C43[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C53[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C55[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C56[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C13[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C13[:num_gauss_points_on_fixed_line]),
+                len(C13[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C13[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte)) - (
+        sp.dia_array(
+            (C55[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C55[:num_gauss_points_on_fixed_line]),
+                len(C55[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C55[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_z_electrolyte)
     )
 
     K32_mechanical_line_int = (
-        -(
-            sp.diags(C43[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C23[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C25[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C26[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C63[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C65[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C23[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C23[:num_gauss_points_on_fixed_line]),
+                len(C23[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C23[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
+    ).T @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte)) - (
+        sp.dia_array(
+            (C66[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+            shape=(
+                len(C66[:num_gauss_points_on_fixed_line]),
+                len(C66[:num_gauss_points_on_fixed_line]),
+            ),
+            dtype=C66[:num_gauss_points_on_fixed_line].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
+    ).T @ (
+        shape_func_fixed_point.multiply(normal_vector_z_electrolyte)
     )
 
     K32_mechanical_boundary_int = (
-        -(
-            sp.diags(C43[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C45[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C46[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C23[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C25[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C26[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C63[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C65[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_x_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_boundary]).dot(
-                grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte
-            )
-        ).T
-        @ (shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte))
+        -1
+        * sp.dia_array(
+            (C23[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+            shape=(
+                len(C23[:num_gauss_points_on_boundary]),
+                len(C23[:num_gauss_points_on_boundary]),
+            ),
+            dtype=C23[:num_gauss_points_on_boundary].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_b_z_times_det_J_b_time_weight_electrolyte)
+    ).T @ (shape_func_b_electrolyte.multiply(normal_vector_y_electrolyte)) - (
+        sp.dia_array(
+            (C66[:num_gauss_points_on_boundary].reshape(1, -1), 0),
+            shape=(
+                len(C66[:num_gauss_points_on_boundary]),
+                len(C66[:num_gauss_points_on_boundary]),
+            ),
+            dtype=C66[:num_gauss_points_on_boundary].dtype,
+        )
+        .tocsr()
+        .dot(grad_shape_func_b_y_times_det_J_b_time_weight_electrolyte)
+    ).T @ (
+        shape_func_b_electrolyte.multiply(normal_vector_z_electrolyte)
     )
+
     K33_mechanical_line_int = (
-        (shape_func_times_det_J_time_weight_fixed_point.multiply(beta_Nitsche)).T
+        (
+            shape_func_times_det_J_time_weight_fixed_point
+            @ sp.dia_array(
+                (beta_Nitsche.reshape(1, -1), 0),
+                shape=(len(beta_Nitsche), len(beta_Nitsche)),
+                dtype=beta_Nitsche.dtype,
+            ).tocsr()
+        ).T
         @ shape_func_fixed_point
         - (
-            sp.diags(C53[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C55[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C55[:num_gauss_points_on_fixed_line]),
+                    len(C55[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C55[:num_gauss_points_on_fixed_line].dtype,
             )
+            .tocsr()
+            .dot(grad_shape_func_x_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
         - (
-            sp.diags(C55[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C66[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C66[:num_gauss_points_on_fixed_line]),
+                    len(C66[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C66[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C56[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_x_electrolyte))
-        - (
-            sp.diags(C63[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_y_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
         - (
-            sp.diags(C65[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
+            sp.dia_array(
+                (C33[:num_gauss_points_on_fixed_line].reshape(1, -1), 0),
+                shape=(
+                    len(C33[:num_gauss_points_on_fixed_line]),
+                    len(C33[:num_gauss_points_on_fixed_line]),
+                ),
+                dtype=C33[:num_gauss_points_on_fixed_line].dtype,
             )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C66[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_y_electrolyte))
-        - (
-            sp.diags(C33[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_z_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C35[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_x_times_det_J_time_weight_fixed_point
-            )
-        ).T
-        @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
-        - (
-            sp.diags(C36[:num_gauss_points_on_fixed_line]).dot(
-                grad_shape_func_y_times_det_J_time_weight_fixed_point
-            )
+            .tocsr()
+            .dot(grad_shape_func_z_times_det_J_time_weight_fixed_point)
         ).T
         @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
     )
 
-    K11_mechanical = K11_mechanical_doamin_int + K11_mechanical_line_int
-    K12_mechanical = (
-        K12_mechanical_doamin_int + K12_mechanical_line_int
-    )  # + K12_mechanical_boundary_int #
-    K13_mechanical = K13_mechanical_doamin_int + K13_mechanical_line_int
-    K21_mechanical = K21_mechanical_doamin_int + K21_mechanical_line_int
-    K22_mechanical = (
-        K22_mechanical_doamin_int + K22_mechanical_line_int
-    )  # + K22_mechanical_boundary_int #
-    K23_mechanical = K23_mechanical_doamin_int + K23_mechanical_line_int
-    K31_mechanical = K31_mechanical_doamin_int + K31_mechanical_line_int
-    K32_mechanical = (
-        K32_mechanical_doamin_int + K32_mechanical_line_int
-    )  # + K32_mechanical_boundary_int #
-    K33_mechanical = K33_mechanical_doamin_int + K33_mechanical_line_int
+    # legate_sparse requires same sparsity pattern for addition, so convert via dense
+    if config.USE_NUMPY_EQUIVALENTS:
+        K11_mechanical = csr_array(
+            K11_mechanical_doamin_int.todense() + K11_mechanical_line_int.todense()
+        )
+        K12_mechanical = csr_array(
+            K12_mechanical_doamin_int.todense() + K12_mechanical_line_int.todense()
+        )
+        K13_mechanical = csr_array(
+            K13_mechanical_doamin_int.todense() + K13_mechanical_line_int.todense()
+        )
+        K21_mechanical = csr_array(
+            K21_mechanical_doamin_int.todense() + K21_mechanical_line_int.todense()
+        )
+        K22_mechanical = csr_array(
+            K22_mechanical_doamin_int.todense() + K22_mechanical_line_int.todense()
+        )
+        K23_mechanical = csr_array(
+            K23_mechanical_doamin_int.todense() + K23_mechanical_line_int.todense()
+        )
+        K31_mechanical = csr_array(
+            K31_mechanical_doamin_int.todense() + K31_mechanical_line_int.todense()
+        )
+        K32_mechanical = csr_array(
+            K32_mechanical_doamin_int.todense() + K32_mechanical_line_int.todense()
+        )
+        K33_mechanical = csr_array(
+            K33_mechanical_doamin_int.todense() + K33_mechanical_line_int.todense()
+        )
+    else:
+        K11_mechanical = K11_mechanical_doamin_int + K11_mechanical_line_int
+        K12_mechanical = K12_mechanical_doamin_int + K12_mechanical_line_int
+        K13_mechanical = K13_mechanical_doamin_int + K13_mechanical_line_int
+        K21_mechanical = K21_mechanical_doamin_int + K21_mechanical_line_int
+        K22_mechanical = K22_mechanical_doamin_int + K22_mechanical_line_int
+        K23_mechanical = K23_mechanical_doamin_int + K23_mechanical_line_int
+        K31_mechanical = K31_mechanical_doamin_int + K31_mechanical_line_int
+        K32_mechanical = K32_mechanical_doamin_int + K32_mechanical_line_int
+        K33_mechanical = K33_mechanical_doamin_int + K33_mechanical_line_int
 
     if config.USE_NUMPY_EQUIVALENTS:
         K_mechanical = csr_array(
             np.block(
                 [
                     [
-                        K11_mechanical.toarray(),
-                        K12_mechanical.toarray(),
-                        K13_mechanical.toarray(),
+                        K11_mechanical.todense(),
+                        K12_mechanical.todense(),
+                        K13_mechanical.todense(),
                     ],
                     [
-                        K21_mechanical.toarray(),
-                        K22_mechanical.toarray(),
-                        K23_mechanical.toarray(),
+                        K21_mechanical.todense(),
+                        K22_mechanical.todense(),
+                        K23_mechanical.todense(),
                     ],
                     [
-                        K31_mechanical.toarray(),
-                        K32_mechanical.toarray(),
-                        K33_mechanical.toarray(),
+                        K31_mechanical.todense(),
+                        K32_mechanical.todense(),
+                        K33_mechanical.todense(),
                     ],
                 ]
             )

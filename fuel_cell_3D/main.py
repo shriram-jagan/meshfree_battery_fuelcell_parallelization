@@ -354,9 +354,8 @@ if studied_physics == "fuel cell":
 # 2939 electrode cells
 # 3951 voids
 
-import pdb
-
-pdb.set_trace()
+# import pdb
+# pdb.set_trace()
 
 
 ##########################
@@ -3710,8 +3709,8 @@ if studied_physics == "fuel cell":
                 shape_func_interface_electrode = csr_array(
                     np.vstack(
                         [
-                            shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode.toarray(),
-                            shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode.toarray(),
+                            shape_func_b_times_det_J_b_time_weight_electrolyte_electrode_electrode.todense(),
+                            shape_func_b_times_det_J_b_time_weight_electrode_pore_electrode.todense(),
                         ]
                     )
                 )
@@ -3780,13 +3779,13 @@ if studied_physics == "fuel cell":
                 print(f"Using np.block instead of scipy.sparse.block_diag", flush=True)
                 # K = block_diag((K_electrolyte, K_electrode, K_pore), format='csc')
                 # K = np.block([
-                #             [K_electrolyte.toarray(),        np.zeros_like(K_electrode.toarray()), np.zeros_like(K_pore.toarray())],
-                #             [np.zeros_like(K_electrolyte.toarray()), K_electrode.toarray(),        np.zeros_like(K_pore.toarray())],
-                #             [np.zeros_like(K_electrolyte.toarray()), np.zeros_like(K_electrode.toarray()), K_pore.toarray()]
+                #             [K_electrolyte.todense(),        np.zeros_like(K_electrode.todense()), np.zeros_like(K_pore.todense())],
+                #             [np.zeros_like(K_electrolyte.todense()), K_electrode.todense(),        np.zeros_like(K_pore.todense())],
+                #             [np.zeros_like(K_electrolyte.todense()), np.zeros_like(K_electrode.todense()), K_pore.todense()]
                 #             ])
-                Ke = K_electrolyte.toarray()
-                Kc = K_electrode.toarray()
-                Kp = K_pore.toarray()
+                Ke = K_electrolyte  # .todense()
+                Kc = K_electrode  # .todense()
+                Kp = K_pore  # .todense()
 
                 # build zero blocks with *correct shapes*
                 Z_ec = np.zeros((Ke.shape[0], Kc.shape[1]))
@@ -3796,7 +3795,7 @@ if studied_physics == "fuel cell":
                 Z_pe = np.zeros((Kp.shape[0], Ke.shape[1]))
                 Z_pc = np.zeros((Kp.shape[0], Kc.shape[1]))
 
-                K = csr_matrix(
+                K = csr_array(
                     np.block([[Ke, Z_ec, Z_ep], [Z_ce, Kc, Z_cp], [Z_pe, Z_pc, Kp]])
                 )
             else:
@@ -4099,7 +4098,8 @@ if studied_physics == "fuel cell":
         )
 
         # solve displacement field
-        u_disp = spsolve(K_mechanical, f_mechanical)  # 1d array
+        print(f"shape of f_mechanical: {f_mechanical.shape}")
+        u_disp = spsolve(K_mechanical, f_mechanical.squeeze())  # 1d array
 
         solve_mechanical_matrix = time()
 

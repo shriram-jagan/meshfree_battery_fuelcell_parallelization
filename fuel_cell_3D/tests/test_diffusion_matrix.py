@@ -85,7 +85,7 @@ class TestDiffusionMatrix:
         )
 
         # Convert to dense for comparison
-        D_dense = D_matrix.toarray()
+        D_dense = D_matrix.todense()
 
         # Check symmetry
         np.testing.assert_array_almost_equal(D_dense, D_dense.T)
@@ -107,7 +107,7 @@ class TestDiffusionMatrix:
         )
 
         # Check eigenvalues
-        D_dense = D_matrix.toarray()
+        D_dense = D_matrix.todense()
         eigenvalues = np.linalg.eigvalsh(D_dense)
 
         # All eigenvalues should be non-negative (allowing small numerical errors)
@@ -140,7 +140,7 @@ class TestDiffusionMatrix:
 
         # Check scaling
         np.testing.assert_array_almost_equal(
-            D_matrix_scaled.toarray(), scale_factor * D_matrix_1.toarray()
+            D_matrix_scaled.todense(), scale_factor * D_matrix_1.todense()
         )
 
     def test_inactive_domain_points(self, setup_basic_params):
@@ -164,7 +164,7 @@ class TestDiffusionMatrix:
         assert D_matrix_partial.shape == (params["n_nodes"], params["n_nodes"])
 
         # Check that it's still symmetric
-        D_dense = D_matrix_partial.toarray()
+        D_dense = D_matrix_partial.todense()
         np.testing.assert_array_almost_equal(D_dense, D_dense.T)
 
     def test_distributed_point_source_shape(self, setup_basic_params):
@@ -219,7 +219,7 @@ class TestDiffusionMatrix:
         )
 
         # Check symmetry
-        D_dense = D_matrix.toarray()
+        D_dense = D_matrix.todense()
         np.testing.assert_array_almost_equal(D_dense, D_dense.T)
 
     def test_zero_diffusion_coefficient(self, setup_basic_params):
@@ -236,7 +236,7 @@ class TestDiffusionMatrix:
         )
 
         # Matrix should be zero
-        assert np.allclose(D_matrix.toarray(), 0.0)
+        assert np.allclose(D_matrix.todense(), 0.0)
 
     def test_different_phase_diffusion_coefficients(self, setup_basic_params):
         """Test with different material phase diffusion coefficients."""
@@ -260,7 +260,7 @@ class TestDiffusionMatrix:
             assert sp.issparse(D_matrix)
 
             # Check that matrix norm scales with coefficient
-            matrix_norm = np.linalg.norm(D_matrix.toarray())
+            matrix_norm = np.linalg.norm(D_matrix.todense())
 
             # Smaller coefficients should give smaller norms
             if phase == "electrode":  # Smallest coefficient
@@ -296,7 +296,7 @@ class TestDiffusionMatrix:
 
         # Unnormalized should be scaled version of normalized
         np.testing.assert_array_almost_equal(
-            D_matrix_unnorm.toarray(), 10.0 * D_matrix_norm.toarray()
+            D_matrix_unnorm.todense(), 10.0 * D_matrix_norm.todense()
         )
 
     def test_gradient_dimension_consistency(self):

@@ -1101,12 +1101,20 @@ def shape_func_n_nodes_by_n_nodes_vectorized(
     )  # (num_non_zero, basis_size, basis_size)
 
     # Compute shape function values using einsum for efficiency
-    # HT0 is (1, basis_size), M_inv is (num_non_zero, basis_size, basis_size)
+    # HT0 is (basis_size,) or (1, basis_size), M_inv is (num_non_zero, basis_size, basis_size)
     # H is (num_non_zero, basis_size)
 
+    # Ensure HT0 is 2D with shape (1, basis_size)
+    if HT0.ndim == 1:
+        HT0_2d = HT0.reshape(1, -1)  # Convert from (basis_size,) to (1, basis_size)
+    else:
+        HT0_2d = HT0  # Already 2D
+
     # First compute HT0 @ M_inv for each matrix
-    # Result shape: (num_non_zero, 1, basis_size)
-    HT0_M_inv = np.matmul(HT0[np.newaxis, :, :], M_inv)
+    # We need to broadcast HT0_2d to work with multiple M_inv matrices
+    # HT0_2d is (1, basis_size), M_inv is (num_non_zero, basis_size, basis_size)
+    # We want result shape: (num_non_zero, 1, basis_size)
+    HT0_M_inv = np.matmul(HT0_2d, M_inv)
 
     # Then compute (HT0 @ M_inv) @ H for each pair
     # We need to do element-wise dot product of HT0_M_inv and H

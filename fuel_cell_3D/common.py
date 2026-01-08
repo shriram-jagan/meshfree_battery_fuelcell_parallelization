@@ -1,12 +1,12 @@
 try:
-    # print("Forcing use of NumPy backend by raising a false error")
-    # raise ImportError  # Force use of regular NumPy instead of legate
+    print("Forcing use of NumPy backend by raising a false error")
+    raise ImportError  # Force use of regular NumPy instead of legate
     import cupynumeric as np
     import legate_sparse as sparse
     import legate_sparse as sp  # alias for scipy.sparse compatibility
     import legate_sparse.linalg as linalg
     from legate.timing import time as legate_time
-    from legate_sparse import csr_array
+    from legate_sparse import csr_array, dia_array
     from legate_sparse.linalg import spsolve
 
     # Try to import these, but they might not exist in legate_sparse yet
@@ -33,7 +33,7 @@ except (RuntimeError, ImportError):
     import scipy.sparse as sparse
     import scipy.sparse as sp  # alias for backward compatibility
     import scipy.sparse.linalg as linalg
-    from scipy.sparse import block_diag, bmat, csr_array, vstack
+    from scipy.sparse import block_diag, bmat, csr_array, dia_array, vstack
     from scipy.sparse.linalg import spsolve
 
     def time():
@@ -55,6 +55,7 @@ __all__ = [
     "sparse",
     "linalg",
     "csr_array",
+    "dia_array",
     "block_diag",
     "vstack",
     "bmat",
