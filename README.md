@@ -11,8 +11,9 @@ How to run:
      `USE_NUMPY_EQUIVALENTS` in `config.py`. This must be set to True for `legate` runs
      and could be True or False for NumPy/SciPy runs.
    - To run using Numpy and SciPy, uncomment the following lines from `common.py`
-       -> print("Forcing use of NumPy backend by raising a false error")
-       -> raise ImportError  # Force use of regular NumPy instead of legate
+       - "print("Forcing use of NumPy backend by raising a false error")"
+       - "raise ImportError  # Force use of regular NumPy instead of legate"
+     
      and then, set `USE_NUMPY_EQUIVALENTS` to False, and then run,
         `python ./main.py`
 
