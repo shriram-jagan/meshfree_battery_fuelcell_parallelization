@@ -19,7 +19,7 @@ where u = [u_x, u_y, u_z] and K_mech is a 3x3 block matrix.
 from typing import Tuple
 
 import config
-from common import bmat, csr_array, np, sp
+from common import block_array, csr_array, np, sp
 
 
 def mechanical_C_tensor_3d(
@@ -1101,76 +1101,23 @@ def mechanical_stiffness_matrix_3d_fuel_cell(
         @ (shape_func_fixed_point.multiply(normal_vector_z_electrolyte))
     )
 
-    # legate_sparse requires same sparsity pattern for addition, so convert via dense
-    if config.USE_NUMPY_EQUIVALENTS:
-        K11_mechanical = csr_array(
-            K11_mechanical_doamin_int.todense() + K11_mechanical_line_int.todense()
-        )
-        K12_mechanical = csr_array(
-            K12_mechanical_doamin_int.todense() + K12_mechanical_line_int.todense()
-        )
-        K13_mechanical = csr_array(
-            K13_mechanical_doamin_int.todense() + K13_mechanical_line_int.todense()
-        )
-        K21_mechanical = csr_array(
-            K21_mechanical_doamin_int.todense() + K21_mechanical_line_int.todense()
-        )
-        K22_mechanical = csr_array(
-            K22_mechanical_doamin_int.todense() + K22_mechanical_line_int.todense()
-        )
-        K23_mechanical = csr_array(
-            K23_mechanical_doamin_int.todense() + K23_mechanical_line_int.todense()
-        )
-        K31_mechanical = csr_array(
-            K31_mechanical_doamin_int.todense() + K31_mechanical_line_int.todense()
-        )
-        K32_mechanical = csr_array(
-            K32_mechanical_doamin_int.todense() + K32_mechanical_line_int.todense()
-        )
-        K33_mechanical = csr_array(
-            K33_mechanical_doamin_int.todense() + K33_mechanical_line_int.todense()
-        )
-    else:
-        K11_mechanical = K11_mechanical_doamin_int + K11_mechanical_line_int
-        K12_mechanical = K12_mechanical_doamin_int + K12_mechanical_line_int
-        K13_mechanical = K13_mechanical_doamin_int + K13_mechanical_line_int
-        K21_mechanical = K21_mechanical_doamin_int + K21_mechanical_line_int
-        K22_mechanical = K22_mechanical_doamin_int + K22_mechanical_line_int
-        K23_mechanical = K23_mechanical_doamin_int + K23_mechanical_line_int
-        K31_mechanical = K31_mechanical_doamin_int + K31_mechanical_line_int
-        K32_mechanical = K32_mechanical_doamin_int + K32_mechanical_line_int
-        K33_mechanical = K33_mechanical_doamin_int + K33_mechanical_line_int
+    K11_mechanical = K11_mechanical_doamin_int + K11_mechanical_line_int
+    K12_mechanical = K12_mechanical_doamin_int + K12_mechanical_line_int
+    K13_mechanical = K13_mechanical_doamin_int + K13_mechanical_line_int
+    K21_mechanical = K21_mechanical_doamin_int + K21_mechanical_line_int
+    K22_mechanical = K22_mechanical_doamin_int + K22_mechanical_line_int
+    K23_mechanical = K23_mechanical_doamin_int + K23_mechanical_line_int
+    K31_mechanical = K31_mechanical_doamin_int + K31_mechanical_line_int
+    K32_mechanical = K32_mechanical_doamin_int + K32_mechanical_line_int
+    K33_mechanical = K33_mechanical_doamin_int + K33_mechanical_line_int
 
-    if config.USE_NUMPY_EQUIVALENTS:
-        K_mechanical = csr_array(
-            np.block(
-                [
-                    [
-                        K11_mechanical.todense(),
-                        K12_mechanical.todense(),
-                        K13_mechanical.todense(),
-                    ],
-                    [
-                        K21_mechanical.todense(),
-                        K22_mechanical.todense(),
-                        K23_mechanical.todense(),
-                    ],
-                    [
-                        K31_mechanical.todense(),
-                        K32_mechanical.todense(),
-                        K33_mechanical.todense(),
-                    ],
-                ]
-            )
-        )
-    else:
-        K_mechanical = bmat(
-            [
-                [K11_mechanical, K12_mechanical, K13_mechanical],
-                [K21_mechanical, K22_mechanical, K23_mechanical],
-                [K31_mechanical, K32_mechanical, K33_mechanical],
-            ]
-        )
+    K_mechanical = block_array(
+        [
+            [K11_mechanical, K12_mechanical, K13_mechanical],
+            [K21_mechanical, K22_mechanical, K23_mechanical],
+            [K31_mechanical, K32_mechanical, K33_mechanical],
+        ]
+    )
 
     return K_mechanical
 

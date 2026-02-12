@@ -23,8 +23,6 @@ def compute_H_matrices_sparse_2d(
     Returns:
         H_T, HT_P_x, HT_P_y, H, H_P_x, H_P_y for all sparse pairs
     """
-    print(f"begin: compute_H_matrices_sparse_2d", flush=True)
-
     n_pairs = len(gauss_indices)
 
     # Get relevant points
@@ -52,8 +50,6 @@ def compute_H_matrices_sparse_2d(
     H_P_x = HT_P_x
     H_P_y = HT_P_y
 
-    print(f"  end: compute_H_matrices_sparse_2d", flush=True)
-
     return H_T, HT_P_x, HT_P_y, H, H_P_x, H_P_y
 
 
@@ -73,8 +69,6 @@ def compute_H_matrices_sparse_3d(
     Returns:
         H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z for all sparse pairs
     """
-    print(f"begin: compute_H_matrices_sparse_3d", flush=True)
-
     n_pairs = len(gauss_indices)
 
     # Get relevant points
@@ -106,8 +100,6 @@ def compute_H_matrices_sparse_3d(
     H_P_x = HT_P_x
     H_P_y = HT_P_y
     H_P_z = HT_P_z
-
-    print(f"  end: compute_H_matrices_sparse_3d", flush=True)
 
     return H_T, HT_P_x, HT_P_y, HT_P_z, H, H_P_x, H_P_y, H_P_z
 
@@ -158,8 +150,6 @@ def shape_grad_shape_func_vectorized(
     Args:
         dtype: Data type for computations (np.float32 or np.float64)
     """
-
-    print(f"begin: shape_grad_shape_func_vectorized", flush=True)
 
     # Convert to numpy arrays if needed - handle lists of floats
     # First convert to float to handle any numeric type, then to int
@@ -333,8 +323,6 @@ def shape_grad_shape_func_vectorized(
         )
     else:
         grad_shape_func_z_times_det_J_time_weight_value = []
-
-    print(f"  end: shape_grad_shape_func_vectorized", flush=True)
 
     # Return as numpy arrays for efficiency
     return (

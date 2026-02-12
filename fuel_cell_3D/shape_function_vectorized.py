@@ -199,8 +199,6 @@ def compute_phi_M_standard_vectorized(
         dtype: Data type for computations (default: np.float32 for memory efficiency).
                Use np.float64 for higher precision if needed.
     """
-    print("begin: compute_phi_M_standard_vectorized", flush=True)
-
     if M_P_z is None:
         M_P_z = np.zeros_like(M)
 
@@ -233,9 +231,6 @@ def compute_phi_M_standard_vectorized(
         z_P_z = None
         H_P_z = None
         HT_P_z = None
-
-    # import pdb
-    # pdb.set_trace()
 
     # Compute phi kernel for all distances
     phi, phi_P_z = compute_phi_kernel(z)
@@ -320,8 +315,6 @@ def compute_phi_M_standard_vectorized(
                 + np.einsum("ni,nj,n->ij", H_i, HT_P_z_i, phi_i)
             )
 
-    print("  end: compute_phi_M_standard_vectorized", flush=True)
-
     return (
         phi_nonzero_index_row,
         phi_nonzero_index_column,
@@ -360,7 +353,6 @@ def compute_phi_M_standard_sparse(
     Args:
         dtype: Data type for computations (default: np.float64).
     """
-    print("begin: compute_phi_M_standard_sparse", flush=True)
 
     if M_P_z is None:
         M_P_z = np.zeros_like(M)
@@ -515,8 +507,6 @@ def compute_phi_M_standard_sparse(
         np.add.at(
             M_P_z, gauss_indices, weighted_HH_phi_P_z + weighted_HPzH + weighted_HHPz
         )
-
-    print("  end: compute_phi_M_standard_sparse", flush=True)
 
     return (
         phi_nonzero_index_row,

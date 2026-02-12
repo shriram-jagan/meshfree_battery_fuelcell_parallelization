@@ -34,8 +34,6 @@ def x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized(
         Array of shape (n_cells * n_gauss,) containing Jacobian determinants times weights
     """
 
-    print(f"begin: x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized", flush=True)
-
     # Convert inputs to numpy arrays
     cell_nodes_x = np.array(cell_nodes_x)
     cell_nodes_y = np.array(cell_nodes_y)
@@ -143,8 +141,6 @@ def x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized(
     # Flatten to 1D array
     det_J_time_weight = det_J_time_weight.ravel()
 
-    print(f"  end: x_G_and_def_J_time_weight_3d_fuelcell_domain_vectorized", flush=True)
-
     return x_G, det_J_time_weight
 
 
@@ -175,11 +171,6 @@ def x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(
     det_J_time_weight : list
         List of Jacobian determinants multiplied by weights
     """
-
-    print(
-        f"begin: x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized",
-        flush=True,
-    )
 
     # Convert inputs to numpy arrays if needed
     cell_nodes_boundary_x = np.array(cell_nodes_boundary_x)
@@ -340,11 +331,6 @@ def x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized(
                 x_G.append([x_G_points[i, k], y_G_points[i, k], z_G_points[i, k]])
                 det_J_time_weight.append(det_J_weighted[i, k])
 
-    print(
-        f"  end: x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_interface_vectorized",
-        flush=True,
-    )
-
     return x_G, det_J_time_weight
 
 
@@ -379,11 +365,6 @@ def x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
     det_J_time_weight : list
         List of Jacobian determinants multiplied by weights
     """
-
-    print(
-        f"begin: x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized",
-        flush=True,
-    )
 
     # Convert inputs to numpy arrays
     cell_nodes_boundary_x = np.array(cell_nodes_boundary_x)
@@ -458,10 +439,5 @@ def x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized(
         for k in range(n_gauss):
             x_G.append([x_G_all[i, k], y_G_all[i, k], z_G_all[i, k]])
             det_J_time_weight.append(det_J_weighted[i, k])
-
-    print(
-        f"  end: x_G_b_and_det_J_b_time_weight_3d_fuelcell_2d_boundary_vectorized",
-        flush=True,
-    )
 
     return x_G, det_J_time_weight

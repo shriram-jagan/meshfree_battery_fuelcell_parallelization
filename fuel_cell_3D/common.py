@@ -6,19 +6,19 @@ try:
     import legate_sparse as sp  # alias for scipy.sparse compatibility
     import legate_sparse.linalg as linalg
     from legate.timing import time as legate_time
-    from legate_sparse import csr_array, dia_array
-    from legate_sparse.linalg import spsolve
 
     # Try to import these, but they might not exist in legate_sparse yet
+    from legate_sparse import block_array, csr_array, dia_array
+    from legate_sparse.linalg import spsolve
+
     try:
-        from legate_sparse import block_diag, bmat, vstack
+        from legate_sparse import block_diag, vstack
     except ImportError:
-        print(f"legate sparse does not have block_diag, vstack, bmat")
+        print(f"legate sparse does not have block_diag and vstack")
         print(f"Make sure to set USE_NUMPY_EQUIVALENTS to True in config.py")
         # These functions might not be implemented in legate_sparse yet
         block_diag = None
         vstack = None
-        bmat = None
 
     # Create a time.time() compatible function
     def time():
@@ -33,7 +33,7 @@ except (RuntimeError, ImportError):
     import scipy.sparse as sparse
     import scipy.sparse as sp  # alias for backward compatibility
     import scipy.sparse.linalg as linalg
-    from scipy.sparse import block_diag, bmat, csr_array, dia_array, vstack
+    from scipy.sparse import block_array, block_diag, csr_array, dia_array, vstack
     from scipy.sparse.linalg import spsolve
 
     def time():
@@ -58,7 +58,7 @@ __all__ = [
     "dia_array",
     "block_diag",
     "vstack",
-    "bmat",
+    "block_array",
     "spsolve",
     "time",
     "use_legate",
