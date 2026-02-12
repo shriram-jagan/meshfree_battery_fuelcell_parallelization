@@ -92,6 +92,14 @@ def diffusion_matrix_fuel_cell(
         Force vector, shape (n_nodes,).
     """
 
+    # -----------------------------------------
+    # SJ; TODO; Thu Feb 12 11:38:18 AM PST 2026
+    # -----------------------------------------
+    # This function returns dense array instead of sparse csr matrix
+    # because we don't support block_diag in legate-sparse yet.
+    # Once we support that, remove the block of code under USE_NUMPY_EQUIVALENTS
+    # in main.py that calls this function, and use sparse operations here instead
+
     # print('K1')
     K1 = (
         grad_shape_func_x_times_det_J_time_weight.todense() * global_diffusion

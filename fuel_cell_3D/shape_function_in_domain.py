@@ -76,7 +76,6 @@ def compute_phi_M_with_interface_method(
     z_P_z = []
     phipz = []
 
-    print("get in", flush=True)
     for i in range(np.shape(x_G)[0]):
         """
         check the distance between point and segments, exact distance

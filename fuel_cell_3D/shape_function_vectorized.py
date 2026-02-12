@@ -232,9 +232,6 @@ def compute_phi_M_standard_vectorized(
         H_P_z = None
         HT_P_z = None
 
-    # import pdb
-    # pdb.set_trace()
-
     # Compute phi kernel for all distances
     phi, phi_P_z = compute_phi_kernel(z)
 
